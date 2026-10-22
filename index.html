@@ -8,59 +8,92 @@
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 <title>J.A.R.V.I.S.</title>
 <style>
-:root{--red:#d6402f;--red2:#ef6a55;--ink:#2a1f2d;--dim:#7d6f85;--card:rgba(255,255,255,.75)}
+:root{--terra:#b85a3e;--red:#d6402f;--ink:#2a1f2d;--dim:#8a7d92;--card:rgba(255,255,255,.62)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{height:100dvh;display:flex;flex-direction:column;background:linear-gradient(180deg,#e6dcf4 0%,#f3e4ee 55%,#f9e3df 100%);color:var(--ink);font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;font-size:17px;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px)}
-header{padding:14px 20px 0;flex:none}
-h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.02em}
-#status{color:var(--dim);font-size:15px;margin-top:2px}
+body{height:100dvh;display:flex;flex-direction:column;background:linear-gradient(180deg,#d9cdea 0%,#e9dcec 50%,#f3e3e6 100%);color:var(--ink);font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;font-size:17px;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);overflow:hidden}
+button{font:inherit;cursor:pointer}
+header{padding:16px 18px 0;flex:none;display:flex;align-items:flex-start;gap:8px}
+.ttl{flex:1;min-width:0}
+h1{margin:0;font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+#status{color:var(--dim);font-size:15px;margin-top:4px}
+#conn{color:var(--dim);font-size:14px;font-weight:600;align-self:center;margin-right:2px}
+.hb{width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.4);color:var(--dim);display:grid;place-items:center;padding:0;flex:none;align-self:center}
+.hb.red{color:var(--red);background:transparent}
+.hb.on{background:var(--red);color:#fff}
 h2{margin:0 0 10px;font-size:19px}
 .view{display:none;flex:1;min-height:0;flex-direction:column;padding:0 16px}
 .view.on{display:flex}
 .scroll{overflow:auto;padding-top:14px}
-.orb{width:150px;height:150px;border-radius:50%;margin:12px auto 10px;flex:none;background:radial-gradient(circle at 35% 30%,var(--red2),var(--red) 60%,#a82a1f);box-shadow:0 18px 40px rgba(214,64,47,.35),inset 0 -8px 20px rgba(0,0,0,.18);animation:breathe 4s ease-in-out infinite}
-body.listening .orb{animation-duration:1s;box-shadow:0 0 0 14px rgba(214,64,47,.16),0 18px 50px rgba(214,64,47,.5),inset 0 -8px 20px rgba(0,0,0,.18)}
+.orb{width:150px;height:150px;border-radius:50%;margin:26px auto 18px;flex:none;background:radial-gradient(circle at 38% 28%,#cb7658,var(--terra) 58%,#9d4630);box-shadow:0 20px 44px rgba(184,90,62,.28),inset 0 -10px 24px rgba(0,0,0,.14);animation:breathe 4s ease-in-out infinite}
+body.listening .orb{animation-duration:1.1s;box-shadow:0 0 0 14px rgba(184,90,62,.16),0 20px 50px rgba(184,90,62,.45),inset 0 -10px 24px rgba(0,0,0,.14)}
 body.speaking .orb{animation-duration:.6s}
+body.looking .orb{animation-duration:2s}
 @keyframes breathe{50%{transform:scale(1.07)}}
-#log{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px 10px}
-.msg{max-width:82%;padding:10px 14px;border-radius:18px;line-height:1.35;white-space:pre-wrap;font-size:16.5px}
-.me{align-self:flex-end;background:var(--red);color:#fff;border-bottom-right-radius:6px}
+#log{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 12px}
+.msg{max-width:82%;padding:11px 15px;border-radius:18px;line-height:1.35;white-space:pre-wrap;font-size:16px}
+.me{align-self:flex-end;background:var(--terra);color:#fff;border-bottom-right-radius:6px}
 .ai{align-self:flex-start;background:var(--card);border-bottom-left-radius:6px}
 .sys{align-self:center;color:var(--dim);font-size:14px}
 .card{align-self:stretch;max-width:100%;display:flex;flex-direction:column;gap:6px}
 .card img{width:100%;max-height:260px;object-fit:cover;border-radius:12px}
-.card b{color:var(--red)}
-#chatForm{display:flex;gap:8px;align-items:center;padding:6px 0 12px;flex:none}
-.round{width:48px;height:48px;border-radius:50%;border:2px solid var(--red);background:transparent;color:var(--red);font-size:22px;display:grid;place-items:center;flex:none;cursor:pointer;padding:0}
+.card b{color:var(--terra)}
+#callRow{display:flex;gap:12px;justify-content:center;align-items:center;padding:6px 0 14px;flex:none}
+.pill{border:0;border-radius:999px;background:rgba(214,64,47,.13);color:var(--red);font-weight:700;font-size:16px;padding:15px 24px}
+.round{width:52px;height:52px;border-radius:50%;border:2px solid var(--red);background:transparent;color:var(--red);display:grid;place-items:center;flex:none;padding:0;font-size:22px}
 .round.fill,.round.on{background:var(--red);color:#fff}
-input,select{width:100%;font:inherit;font-size:16px;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:14px;padding:12px 14px;color:var(--ink);min-width:0}
+#chatForm{display:flex;gap:8px;align-items:center;padding:6px 0 14px;flex:none}
+#chatForm .round{width:46px;height:46px}
+input,select{width:100%;font:inherit;font-size:16px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.85);border-radius:14px;padding:12px 14px;color:var(--ink);min-width:0}
 #chatForm input{border-radius:24px}
 .panel{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px}
 ul{list-style:none;margin:0 0 10px;padding:0}
 li{padding:8px 0;border-bottom:1px solid rgba(0,0,0,.07);display:flex;justify-content:space-between;gap:8px}
-li button{background:none;border:0;color:var(--dim);font-size:22px;cursor:pointer}
+li button{background:none;border:0;color:var(--dim);font-size:22px}
 li.done span{text-decoration:line-through;color:var(--dim)}
 .row{display:flex;gap:8px}
+.row .round{width:46px;height:46px}
 label{display:block;color:var(--dim);font-size:15px;margin:12px 0 4px}
 label.chk{display:flex;align-items:center;gap:10px;color:var(--ink)}
 label.chk input{width:auto}
-nav{display:flex;justify-content:space-around;flex:none;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(0,0,0,.06)}
-nav button{background:none;border:0;font:inherit;font-size:15px;color:var(--dim);padding:8px 14px;border-radius:14px;cursor:pointer}
-nav button.on{color:var(--red);background:rgba(214,64,47,.12);font-weight:600}
+nav{display:flex;justify-content:space-around;flex:none;margin:0 16px calc(10px + env(safe-area-inset-bottom,0px));padding:7px;border-radius:28px;background:rgba(255,255,255,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 6px 24px rgba(80,50,90,.08)}
+nav button{flex:1;max-width:76px;height:46px;background:none;border:0;color:var(--dim);border-radius:23px;display:grid;place-items:center;padding:0}
+nav button.on{color:var(--red);background:rgba(214,64,47,.14)}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#cam{position:fixed;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
+#cam.on{display:flex}
+#camV{flex:1;min-height:0;width:100%;object-fit:cover}
+#camHint{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 70px);text-align:center;color:#fff;font-size:15px;text-shadow:0 1px 6px rgba(0,0,0,.6);padding:0 24px}
+#camBar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.55))}
+#camBar .hb{width:48px;height:48px;background:rgba(255,255,255,.22);color:#fff}
+#shutter{width:72px;height:72px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.25);padding:0}
+#shutter:active{background:#fff}
 :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
 </style>
 </head>
 <body>
-<header><h1>Jarvis</h1><div id="status">bereit</div></header>
+<header>
+  <div class="ttl"><h1>Jarvis</h1><div id="status">bereit</div></div>
+  <span id="conn">verbunden</span>
+  <button class="hb" id="reset" aria-label="Unterhaltung zurücksetzen"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></svg></button>
+  <button class="hb" id="camBtn" aria-label="Kamera öffnen"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+  <button class="hb red" id="convoBtn" aria-label="Gesprächsmodus an/aus"><svg class="i" viewBox="0 0 24 24" style="width:22px;height:22px"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+</header>
 
-<section class="view on" id="v-chat">
+<section class="view on" id="v-talk">
   <div class="orb" aria-hidden="true"></div>
-  <div id="log" aria-live="polite"></div>
+  <div id="talkHost" style="flex:1;min-height:0;display:flex;flex-direction:column"><div id="log" aria-live="polite"></div></div>
+  <div id="callRow">
+    <button class="pill" id="hangup">Auflegen</button>
+    <button class="round" id="mic" aria-label="Sprechen"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+  </div>
+</section>
+
+<section class="view" id="v-chat">
+  <div id="chatHost" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-top:14px"></div>
   <form id="chatForm">
-    <button type="button" class="round" id="mic" aria-label="Sprechen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-    <input id="chatIn" placeholder="Schreibe oder sprich mit JARVIS" autocomplete="off">
+    <input id="chatIn" placeholder="Schreibe mit JARVIS" autocomplete="off">
     <button class="round fill" aria-label="Senden">&#8593;</button>
   </form>
 </section>
@@ -85,23 +118,36 @@ nav button.on{color:var(--red);background:rgba(214,64,47,.12);font-weight:600}
 </section>
 
 <nav>
-  <button class="on" data-v="v-chat">Sprechen</button>
-  <button data-v="v-tasks">Aufgaben</button>
-  <button data-v="v-set">Einstellungen</button>
+  <button class="on" data-v="v-talk" aria-label="Sprechen"><svg class="i" viewBox="0 0 24 24"><path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4"/></svg></button>
+  <button data-v="v-chat" aria-label="Chat"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+  <button data-v="v-tasks" aria-label="Aufgaben"><svg class="i" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.4 1.4L7 5M3.5 12l1.4 1.4L7 11M3.5 18l1.4 1.4L7 17"/></svg></button>
+  <button data-v="v-set" aria-label="Einstellungen"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
 </nav>
 
+<div id="cam" role="dialog" aria-label="Kamera">
+  <video id="camV" playsinline muted autoplay></video>
+  <div id="camHint">Tippe auf den Auslöser oder stelle deine Frage per Sprache.</div>
+  <div id="camBar">
+    <button class="hb" id="camClose" aria-label="Kamera schließen"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button id="shutter" aria-label="Foto aufnehmen"></button>
+    <button class="hb" id="camFlip" aria-label="Kamera wechseln"><svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-14-5.3M4 4v4h4M4 12a8 8 0 0 0 14 5.3M20 20v-4h-4"/></svg></button>
+  </div>
+</div>
+
 <script>
-/* ===== SCHRITT 2: Speicher (localStorage = Daten bleiben im Browser) ===== */
+/* ===== Speicher (localStorage = Daten bleiben im Browser) ===== */
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 let tasks=load('j_tasks',[]), memory=load('j_mem',[]), history=[];
 const $=id=>document.getElementById(id);
 $('okey').value=load('j_okey',''); $('omodel').value=load('j_omodel','gpt-4o-mini');
 $('ovoice').value=load('j_ovoice','coral'); $('voice').checked=load('j_voice',true);
-['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>save('j_'+i,$(i).value.trim()));
-$('voice').onchange=()=>{save('j_voice',$('voice').checked);speechSynthesis.cancel();player.pause()};
+['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>{save('j_'+i,$(i).value.trim());conn()});
+$('voice').onchange=()=>{save('j_voice',$('voice').checked);stopSpeech()};
+function conn(){const k=$('okey').value.trim();$('conn').textContent=!navigator.onLine?'offline':k?'verbunden':'kein Key'}
+addEventListener('online',conn);addEventListener('offline',conn);conn();
 
-/* ===== SCHRITT 3: Anzeige ===== */
+/* ===== Anzeige ===== */
 function say(text,cls){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;$('log').append(d);$('log').scrollTop=1e9}
 function renderList(id,items,onDel,onTog){
   const ul=$(id);ul.replaceChildren();
@@ -117,10 +163,11 @@ function render(){
   renderList('mem',memory,i=>{memory.splice(i,1);save('j_mem',memory);render()});
 }
 
-/* ===== SCHRITT 4: Stimme (OpenAI-Stimme, sonst iPhone-Stimme) ===== */
+/* ===== Stimme (OpenAI-Stimme, sonst iPhone-Stimme) ===== */
 const player=new Audio();
 const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 document.addEventListener('pointerdown',()=>{if(!player.dataset.ok){player.dataset.ok=1;player.src=SILENT;player.play().catch(()=>{})}},{once:true});
+let spkId=0,speakingNow=false,busy=false,convo=false;
 function bestVoice(){
   const de=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').startsWith('de'));
   const score=v=>{const n=v.name.toLowerCase();let p=0;
@@ -128,17 +175,20 @@ function bestVoice(){
     if(/anna|markus|petra|viktor|yannick/.test(n))p+=5;if(v.localService)p+=1;return p};
   return de.sort((a,b)=>score(b)-score(a))[0];
 }
-function browserSpeak(text){
-  if(!('speechSynthesis' in window))return;
+function speechEnded(id){if(id!==spkId)return;speakingNow=false;document.body.classList.remove('speaking');afterSpeak()}
+function browserSpeak(text,id){
+  if(!('speechSynthesis' in window)){speechEnded(id);return}
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);u.lang='de-DE';
   const v=bestVoice();if(v)u.voice=v;
   u.onstart=()=>document.body.classList.add('speaking');
-  u.onend=u.onerror=()=>document.body.classList.remove('speaking');
+  u.onend=u.onerror=()=>speechEnded(id);
   speechSynthesis.speak(u);
 }
+function stopSpeech(){spkId++;speakingNow=false;document.body.classList.remove('speaking');try{speechSynthesis.cancel()}catch{}player.pause()}
 async function speak(text){
   if(!$('voice').checked)return;
+  const id=++spkId;speakingNow=true;
   const clean=text.replace(/[*#_`]/g,'').slice(0,1500);
   const key=$('okey').value.trim();
   if(key){
@@ -149,38 +199,96 @@ async function speak(text){
           instructions:'Sprich Deutsch, natürlich, ruhig und freundlich, wie ein kluger persönlicher Assistent.',response_format:'mp3'})});
       if(!r.ok)throw new Error(r.status);
       const url=URL.createObjectURL(await r.blob());
+      if(id!==spkId)return;
       speechSynthesis.cancel();player.pause();player.src=url;
       player.onplay=()=>document.body.classList.add('speaking');
-      player.onended=player.onpause=()=>document.body.classList.remove('speaking');
+      player.onended=()=>speechEnded(id);
       await player.play();return;
-    }catch(e){}
+    }catch(e){if(id!==spkId)return}
   }
-  browserSpeak(clean);
+  browserSpeak(clean,id);
 }
+
+/* ===== Spracherkennung + Gesprächsmodus ===== */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let rec=null;
-$('mic').onclick=()=>{
-  if(!SR){say('Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Chrome oder Edge.','sys');return}
-  if(rec){rec.stop();return}
-  rec=new SR();rec.lang='de-DE';rec.interimResults=false;
-  rec.onstart=()=>{document.body.classList.add('listening');$('mic').classList.add('on')};
-  rec.onresult=e=>handle(e.results[0][0].transcript);
-  rec.onerror=e=>say('Mikrofon-Fehler: '+e.error,'sys');
-  rec.onend=()=>{document.body.classList.remove('listening');$('mic').classList.remove('on');rec=null};
-  rec.start();
-};
+function syncUI(){$('convoBtn').classList.toggle('on',convo);$('mic').classList.toggle('on',!!rec)}
+function startListen(){
+  if(!SR){say('Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Safari, Chrome oder Edge.','sys');convo=false;syncUI();return}
+  if(rec)return;
+  stopSpeech();
+  let got=false;rec=new SR();rec.lang='de-DE';rec.interimResults=false;
+  rec.onstart=()=>{document.body.classList.add('listening');syncUI()};
+  rec.onresult=e=>{got=true;handle(e.results[0][0].transcript)};
+  rec.onerror=e=>{
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){convo=false;say('Mikrofon-Zugriff verweigert. Erlaube ihn in den Browser-Einstellungen.','sys')}
+    else if(e.error!=='no-speech'&&e.error!=='aborted')say('Mikrofon-Fehler: '+e.error,'sys')};
+  rec.onend=()=>{document.body.classList.remove('listening');rec=null;syncUI();if(!got)afterSpeak()};
+  try{rec.start()}catch{rec=null}
+}
+function afterSpeak(){
+  if(!convo)return;
+  setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},450);
+}
+$('mic').onclick=()=>{if(rec)rec.stop();else startListen()};
+$('convoBtn').onclick=()=>{convo=!convo;syncUI();if(convo)startListen();else if(rec)rec.abort()};
+$('hangup').onclick=()=>{convo=false;stopSpeech();if(rec)rec.abort();closeCam();syncUI()};
+$('reset').onclick=()=>{history=[];$('log').replaceChildren();stopSpeech();say('Unterhaltung zurückgesetzt.','sys')};
 
-/* ===== SCHRITT 5: Erinnerungen ===== */
+/* ===== Erinnerungen ===== */
 function remind(ms,text){
   setTimeout(()=>{const m='Erinnerung: '+text;say(m,'ai');speak(m);
     try{if(Notification.permission==='granted')new Notification('JARVIS',{body:text})}catch{}},ms);
 }
 
-/* ===== SCHRITT 6: Befehle erkennen, sonst KI fragen ===== */
+/* ===== Kamera ===== */
+let camStream=null,camFacing='environment';
+async function openCam(){
+  $('cam').classList.add('on');document.body.classList.add('looking');
+  try{
+    closeStream();
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing,width:{ideal:1280}},audio:false});
+    $('camV').srcObject=camStream;await $('camV').play().catch(()=>{});
+    return true;
+  }catch(e){
+    closeCam();
+    say(e&&e.name==='NotAllowedError'?'Kamera-Zugriff verweigert. Erlaube ihn in den Browser-Einstellungen.':'Kamera nicht verfügbar. Sie funktioniert nur über https und mit einer Kamera.','sys');
+    return false;
+  }
+}
+function closeStream(){if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;$('camV').srcObject=null}
+function closeCam(){closeStream();$('cam').classList.remove('on');document.body.classList.remove('looking')}
+function snap(){
+  const v=$('camV');if(!v.videoWidth)return null;
+  const s=Math.min(1,1024/Math.max(v.videoWidth,v.videoHeight));
+  const c=document.createElement('canvas');c.width=Math.round(v.videoWidth*s);c.height=Math.round(v.videoHeight*s);
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.8);
+}
+async function shoot(question){
+  const url=snap();closeCam();
+  if(!url)return reply('Ich konnte kein Bild aufnehmen.');
+  addCard('Foto','',url);
+  await askAI(question||'Was siehst du auf diesem Foto?',url);
+}
+async function lookAt(question){
+  if(!await openCam())return;
+  await new Promise(r=>setTimeout(r,1300));
+  await shoot(question);
+}
+async function run(fn){busy=true;try{await fn()}finally{busy=false;if(!speakingNow)afterSpeak()}}
+$('camBtn').onclick=()=>openCam();
+$('camClose').onclick=closeCam;
+$('shutter').onclick=()=>run(()=>shoot(''));
+$('camFlip').onclick=()=>{camFacing=camFacing==='environment'?'user':'environment';openCam()};
+
+/* ===== Befehle erkennen, sonst KI fragen ===== */
 function reply(t){say(t,'ai');speak(t)}
-async function handle(input){
+const handle=input=>run(()=>route(input));
+async function route(input){
   const text=input.trim();if(!text)return;
   say(text,'me');let m;
+  if(camStream)return shoot(text);
   if(m=text.match(/^merk(?:e)? dir,? (?:dass )?(.+)/i)){memory.push({text:m[1]});save('j_mem',memory);render();return reply('Gemerkt: '+m[1])}
   if(/^(vergiss alles|lösche (das )?gedächtnis)/i.test(text)){memory=[];save('j_mem',memory);render();return reply('Gedächtnis gelöscht.')}
   if(/was weißt du (alles )?über mich/i.test(text))return reply(memory.length?'Das weiß ich: '+memory.map(x=>x.text).join('; '):'Ich weiß noch nichts über dich. Sag "Merk dir ...".');
@@ -191,13 +299,14 @@ async function handle(input){
     try{Notification.requestPermission()}catch{}
     remind(ms,m[3]);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
   if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
+  if(/was siehst du|schau (mal )?(hier )?(hin|her|das an)|guck (mal )?(hier )?(hin|her)|was ist das (hier|da)|kannst du (das|mich) sehen|nimm (ein )?(foto|bild) auf/i.test(text))return lookAt(text);
   if(m=text.match(/(?:zeig|zeige|zeigst)(?: mir)?(?: ein| eine| mal)* (?:bilder|bild|fotos|foto)(?: von| vom| der| des| über)? (.+)/i))return showImage(m[1]);
   if(m=text.match(/^wie sieht (?:ein |eine |der |die |das )?(.+) aus/i))return showImage(m[1]);
   if(/was (läuft|ist los|passiert).*welt|nachrichten|schlagzeilen|aktuelle news/i.test(text))return showNews();
   await askAI(text);
 }
 
-/* ===== SCHRITT 6b: Bilder & Nachrichten ===== */
+/* ===== Bilder & Nachrichten ===== */
 function addCard(title,text,url){
   const d=document.createElement('div');d.className='msg ai card';
   if(url){const i=document.createElement('img');i.src=url;i.alt=title;d.append(i)}
@@ -249,17 +358,19 @@ async function showNews(){
   speak('Das sind die Schlagzeilen: '+items.map(i=>i.titel).join('. '));
 }
 
-/* ===== SCHRITT 7: KI-Chat (OpenAI) ===== */
-async function askAI(text){
+/* ===== KI-Chat (OpenAI, mit Bild-Unterstützung) ===== */
+async function askAI(text,imageUrl){
   const key=$('okey').value.trim();
-  if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn rechts ein.');
-  history.push({role:'user',content:text});history=history.slice(-20);
-  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'.';
+  if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn unter Einstellungen ein.');
+  history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Wenn der Nutzer ein Foto der Kamera schickt, beschreibe oder beantworte genau das, was darauf zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'.';
+  const msgs=[{role:'system',content:sys},...history];
+  if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
   try{
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:$('omodel').value.trim(),messages:[{role:'system',content:sys},...history]})});
+      body:JSON.stringify({model:$('omodel').value.trim(),messages:msgs})});
     const d=await r.json();wait.remove();
     if(!r.ok)return reply('Fehler von OpenAI: '+(d.error?.message||r.status));
     const out=d.choices?.[0]?.message?.content?.trim()||'Keine Antwort erhalten.';
@@ -267,15 +378,19 @@ async function askAI(text){
   }catch(e){wait.remove();reply('Verbindung fehlgeschlagen. Bist du online?')}
 }
 
-/* ===== SCHRITT 8: Alles verbinden ===== */
+/* ===== Alles verbinden ===== */
 $('chatForm').onsubmit=e=>{e.preventDefault();const v=$('chatIn').value;$('chatIn').value='';handle(v)};
 $('taskForm').onsubmit=e=>{e.preventDefault();const v=$('taskIn').value.trim();if(!v)return;tasks.push({text:v,done:false});save('j_tasks',tasks);$('taskIn').value='';render()};
-speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices()};
+try{speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices()}}catch{}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===b.dataset.v));
+  /* das Gesprächsprotokoll wandert zwischen "Sprechen" und "Chat" */
+  if(b.dataset.v==='v-chat')$('chatHost').append($('log'));
+  else if(b.dataset.v==='v-talk')$('talkHost').append($('log'));
+  $('log').scrollTop=1e9;
 });
-new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
+new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
 reply('Systeme online. Wie kann ich helfen?');
 </script>
