@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 <title>J.A.R.V.I.S.</title>
@@ -73,11 +73,43 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke
 #shutter:active{background:#fff}
 :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
+/* ===== Iron-Man-HUD ===== */
+:root{--terra:#0aa8d8;--red:#27d9ff;--ink:#d8f6ff;--dim:#6fa3b8;--card:rgba(8,40,60,.62);--line:rgba(39,217,255,.28)}
+body{background:radial-gradient(ellipse at 50% 20%,#0b3550 0%,#04141f 55%,#02080d 100%)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.07;background-image:linear-gradient(#27d9ff 1px,transparent 1px),linear-gradient(90deg,#27d9ff 1px,transparent 1px);background-size:38px 38px}
+h1{font-size:24px;font-weight:300;letter-spacing:.32em;text-transform:uppercase;color:#27d9ff;text-shadow:0 0 14px rgba(39,217,255,.7)}
+#status,#conn{font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.14em;font-size:12px}
+#status::before{content:"\25CF ";color:#27d9ff}
+.hb{background:rgba(39,217,255,.08);border:1px solid var(--line)}
+.hb.red{background:rgba(39,217,255,.08)}
+.hb.on,.round.fill,.round.on,.go{background:#27d9ff;color:#00131c;box-shadow:0 0 16px rgba(39,217,255,.6)}
+.orb{width:170px;height:170px;position:relative;background:radial-gradient(circle,#fff 0 6%,#c9f8ff 12%,#27d9ff 30%,rgba(39,217,255,.16) 56%,transparent 70%);box-shadow:0 0 40px rgba(39,217,255,.55),0 0 90px rgba(39,217,255,.25)}
+.orb::before,.orb::after{content:"";position:absolute;border-radius:50%}
+.orb::before{inset:-14px;border:2px dashed rgba(39,217,255,.7);animation:spin 14s linear infinite}
+.orb::after{inset:14px;border:3px solid transparent;border-top-color:#27d9ff;border-bottom-color:#27d9ff;box-shadow:0 0 12px #27d9ff;animation:spin 5s linear infinite reverse}
+body.listening .orb{box-shadow:0 0 0 12px rgba(39,217,255,.14),0 0 60px rgba(39,217,255,.8)}
+body.listening .orb::after{animation-duration:1.4s}
+body.speaking .orb::before{animation-duration:3s}
+body.speaking .orb::after{animation-duration:1.2s}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{border-radius:10px;border:1px solid var(--line)}
+.me{background:rgba(10,168,216,.3);border-color:rgba(39,217,255,.6);color:#fff}
+.ai{background:var(--card)}
+.sys{border:0;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.panel{border:1px solid var(--line)}
+input,select{background:rgba(4,25,38,.85);border:1px solid var(--line);color:var(--ink)}
+::placeholder{color:var(--dim)}
+li{border-bottom-color:rgba(39,217,255,.14)}
+nav{background:rgba(4,25,38,.75);border:1px solid var(--line)}
+nav button.on{background:rgba(39,217,255,.16);box-shadow:0 0 12px rgba(39,217,255,.4)}
+.pill{background:rgba(255,59,48,.14);color:#ff7468;border:1px solid rgba(255,59,48,.5)}
+.go.no{background:rgba(255,255,255,.1);color:var(--ink);box-shadow:none}
+@media(prefers-reduced-motion:reduce){.orb::before,.orb::after{animation:none}}
 </style>
 </head>
 <body>
 <header>
-  <div class="ttl"><h1>Jarvis</h1><div id="status">bereit</div></div>
+  <div class="ttl"><h1>J.A.R.V.I.S.</h1><div id="status">bereit</div></div>
   <span id="conn">verbunden</span>
   <button class="hb" id="reset" aria-label="Unterhaltung zurücksetzen"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></svg></button>
   <button class="hb" id="camBtn" aria-label="Kamera öffnen"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
@@ -117,7 +149,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke
     <label for="omodel">Modell</label>
     <input id="omodel" value="gpt-4o-mini">
     <label for="ovoice">Stimme</label>
-    <select id="ovoice"><option>coral</option><option>nova</option><option>onyx</option><option>alloy</option><option>shimmer</option><option>sage</option></select>
+    <select id="ovoice"><option>ballad</option><option>ash</option><option>onyx</option><option>echo</option><option>fable</option><option>coral</option></select>
     <label class="chk"><input type="checkbox" id="voice" checked> Sprachausgabe</label>
   </div>
 </section>
@@ -146,7 +178,7 @@ const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 let tasks=load('j_tasks',[]), memory=load('j_mem',[]), history=[];
 const $=id=>document.getElementById(id);
 $('okey').value=load('j_okey',''); $('omodel').value=load('j_omodel','gpt-4o-mini');
-$('ovoice').value=load('j_ovoice','coral'); $('voice').checked=load('j_voice',true);
+$('ovoice').value=load('j_ovoice','ballad'); $('voice').checked=load('j_voice',true);
 ['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>{save('j_'+i,$(i).value.trim());conn()});
 $('voice').onchange=()=>{save('j_voice',$('voice').checked);stopSpeech()};
 function conn(){const k=$('okey').value.trim();$('conn').textContent=!navigator.onLine?'offline':k?'verbunden':'kein Key'}
@@ -169,7 +201,7 @@ function render(){
 }
 
 /* ===== Stimme (OpenAI-Stimme, sonst iPhone-Stimme) ===== */
-const player=new Audio();
+const player=new Audio();player.defaultPlaybackRate=1.12;player.preservesPitch=true;
 const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 document.addEventListener('pointerdown',()=>{if(!player.dataset.ok){player.dataset.ok=1;player.src=SILENT;player.play().catch(()=>{})}},{once:true});
 let spkId=0,speakingNow=false,busy=false,convo=false;
@@ -191,25 +223,30 @@ function browserSpeak(text,id){
   speechSynthesis.speak(u);
 }
 function stopSpeech(){spkId++;speakingNow=false;document.body.classList.remove('speaking');try{speechSynthesis.cancel()}catch{}player.pause()}
+const playUrl=u=>new Promise((ok,no)=>{player.src=u;player.onplay=()=>document.body.classList.add('speaking');player.onended=ok;player.onerror=no;player.play().catch(no)});
 async function speak(text){
   if(!$('voice').checked)return;
   const id=++spkId;speakingNow=true;
   const clean=text.replace(/[*#_`]/g,'').slice(0,1500);
   const key=$('okey').value.trim();
   if(key){
+    let started=false;
     try{
-      const r=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',
+      /* Text in Satzgruppen teilen und alle parallel erzeugen: der erste Satz startet sofort */
+      const parts=[];
+      for(const x of clean.match(/[^.!?\n]+[.!?]*/g)||[clean]){const t=x.trim();if(!t)continue;
+        if(parts.length&&(parts[parts.length-1].length<50||parts.length>=6))parts[parts.length-1]+=' '+t;else parts.push(t)}
+      const jobs=parts.map(p=>fetch('https://api.openai.com/v1/audio/speech',{method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-        body:JSON.stringify({model:'gpt-4o-mini-tts',voice:$('ovoice').value,input:clean,
-          instructions:'Sprich Deutsch, natürlich, ruhig und freundlich, wie ein kluger persönlicher Assistent.',response_format:'mp3'})});
-      if(!r.ok)throw new Error(r.status);
-      const url=URL.createObjectURL(await r.blob());
-      if(id!==spkId)return;
-      speechSynthesis.cancel();player.pause();player.src=url;
-      player.onplay=()=>document.body.classList.add('speaking');
-      player.onended=()=>speechEnded(id);
-      await player.play();return;
-    }catch(e){if(id!==spkId)return}
+        body:JSON.stringify({model:'gpt-4o-mini-tts',voice:$('ovoice').value,input:p,
+          instructions:'Sprich Deutsch mit dezentem britischem Akzent wie J.A.R.V.I.S. aus Iron Man: tiefe, ruhige, souveräne Männerstimme, elegant und trocken-ironisch, zügiges Tempo, ohne lange Pausen.',response_format:'mp3'})})
+        .then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>URL.createObjectURL(b)));
+      jobs.forEach(j=>j.catch(()=>{}));
+      speechSynthesis.cancel();
+      for(const j of jobs){const u=await j;if(id!==spkId)return;started=true;await playUrl(u)}
+      if(id===spkId)speechEnded(id);
+      return;
+    }catch(e){if(id!==spkId)return;if(started){speechEnded(id);return}}
   }
   browserSpeak(clean,id);
 }
@@ -233,7 +270,7 @@ function startListen(){
 }
 function afterSpeak(){
   if(!convo)return;
-  setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},450);
+  setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},250);
 }
 $('mic').onclick=()=>{if(rec)rec.stop();else startListen()};
 $('convoBtn').onclick=()=>{convo=!convo;syncUI();if(convo)startListen();else if(rec)rec.abort()};
@@ -462,7 +499,7 @@ async function askAI(text,imageUrl){
   if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn unter Einstellungen ein.');
   history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);
   const open=tasks.filter(t=>!t.done).map(t=>t.text).join('; ')||'keine';
-  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. Nachrichten, Anrufe und Termine werden dem Nutzer immer zur Bestätigung angezeigt; sende nie etwas ohne Angabe von Empfänger und Inhalt und frage bei Unklarheit nach. Du hast KEINEN Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, wenn danach gefragt wird. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch wie der J.A.R.V.I.S. aus den Iron-Man-Filmen: ein souveräner, loyaler Butler mit britisch-trockener Ironie, der den Nutzer mit „Sir“ anspricht und siezt. Antworte höflich, präzise und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. Nachrichten, Anrufe und Termine werden dem Nutzer immer zur Bestätigung angezeigt; sende nie etwas ohne Angabe von Empfänger und Inhalt und frage bei Unklarheit nach. Du hast KEINEN Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, wenn danach gefragt wird. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
   const msgs=[{role:'system',content:sys},...history];
   if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
@@ -508,7 +545,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
 renderAutos();
-{const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+'. Systeme online.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Wie kann ich helfen?')}
+{const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+', Sir. Alle Systeme einsatzbereit.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Was kann ich für Sie tun?')}
 </script>
 </body>
 </html>
