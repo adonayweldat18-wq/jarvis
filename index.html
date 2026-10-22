@@ -37,6 +37,7 @@ body.speaking .reactor b{animation-duration:.5s}
 .me{align-self:flex-end;background:#0d3a50;border:1px solid var(--line)}
 .ai{align-self:flex-start;border-left:3px solid var(--cyan);background:#06182414}
 .sys{align-self:center;color:var(--dim);font-size:16px}
+.card{align-self:stretch;max-width:100%;display:flex;flex-direction:column;gap:6px}.card img{width:100%;max-height:260px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}.card b{color:var(--gold);font-weight:600}
 form{display:flex;gap:8px;width:100%;margin-top:10px}
 input,select{background:#031520;border:1px solid var(--line);color:var(--text);border-radius:4px;padding:9px;font:inherit;min-width:0}
 form input{flex:1}
@@ -184,7 +185,62 @@ async function handle(input){
     try{Notification.requestPermission()}catch{}
     remind(ms,m[3]);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
   if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
+  if(m=text.match(/(?:zeig|zeige|zeigst)(?: mir)?(?: ein| eine| mal)* (?:bilder|bild|fotos|foto)(?: von| vom| der| des| über)? (.+)/i))return showImage(m[1]);
+  if(m=text.match(/^wie sieht (?:ein |eine |der |die |das )?(.+) aus/i))return showImage(m[1]);
+  if(/was (läuft|ist los|passiert).*welt|nachrichten|schlagzeilen|aktuelle news/i.test(text))return showNews();
   await askAI(text);
+}
+
+/* ===== SCHRITT 6b: Bilder & Nachrichten ===== */
+function addCard(title,text,url){
+  const d=document.createElement('div');d.className='msg ai card';
+  if(url){const i=document.createElement('img');i.src=url;i.alt=title;d.append(i)}
+  const b=document.createElement('b');b.textContent=title;d.append(b);
+  if(text){const p=document.createElement('div');p.textContent=text;d.append(p)}
+  $('log').append(d);$('log').scrollTop=1e9;
+}
+async function wikiImages(term,max){
+  for(const lang of ['de','en']){
+    try{
+      const u='https://'+lang+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch='+encodeURIComponent(term)+'&gsrlimit=6&prop=pageimages&piprop=thumbnail&pithumbsize=700';
+      const d=await (await fetch(u)).json();
+      const pages=Object.values(d.query?.pages||{}).sort((a,b)=>a.index-b.index).filter(p=>p.thumbnail);
+      if(pages.length)return pages.slice(0,max).map(p=>({title:p.title,url:p.thumbnail.source}));
+    }catch(e){}
+  }
+  return [];
+}
+async function showImage(term){
+  say('…','sys');const w=$('log').lastChild;
+  const r=await wikiImages(term,2);w.remove();
+  if(!r.length)return reply('Ich habe kein Bild zu "'+term+'" gefunden.');
+  r.forEach(x=>addCard(x.title,'',x.url));speak('Hier ist ein Bild zu '+term+'.');
+}
+async function showNews(){
+  const key=$('okey').value.trim();
+  if(!key)return reply('Für Nachrichten brauche ich den OpenAI API-Key.');
+  say('Ich suche die aktuellen Nachrichten …','sys');const w=$('log').lastChild;
+  const prompt='Suche im Internet die wichtigsten aktuellen Weltnachrichten von heute ('+new Date().toLocaleDateString('de-DE')+'). Antworte NUR mit einem JSON-Array aus genau 4 Objekten, ohne weiteren Text, im Format {"titel":"kurze deutsche Schlagzeile","text":"ein Satz auf Deutsch","bild":"kurzer Wikipedia-Suchbegriff für ein passendes Foto, z.B. Land, Stadt oder Person"}.';
+  let data=null,err='';
+  for(const tool of ['web_search','web_search_preview']){
+    try{
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:$('omodel').value.trim(),tools:[{type:tool}],input:prompt})});
+      const d=await r.json();
+      if(r.ok){data=d;break}
+      err=d.error?.message||String(r.status);
+    }catch(e){err='Verbindung fehlgeschlagen'}
+  }
+  w.remove();
+  if(!data)return reply('Die Nachrichtensuche hat nicht geklappt: '+err);
+  const txt=(data.output||[]).filter(o=>o.type==='message').flatMap(o=>o.content||[]).map(c=>c.text||'').join('');
+  let items;try{items=JSON.parse(txt.slice(txt.indexOf('['),txt.lastIndexOf(']')+1))}catch{}
+  if(!items||!items.length)return reply(txt||'Ich habe keine Nachrichten gefunden.');
+  items=items.slice(0,4);
+  const imgs=await Promise.all(items.map(it=>wikiImages(it.bild||it.titel,1)));
+  items.forEach((it,i)=>addCard(it.titel,it.text,imgs[i][0]?.url));
+  speak('Das sind die Schlagzeilen: '+items.map(i=>i.titel).join('. '));
 }
 
 /* ===== SCHRITT 7: KI-Chat (OpenAI) ===== */
