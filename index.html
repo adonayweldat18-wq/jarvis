@@ -111,11 +111,18 @@ function render(){
 }
 
 /* ===== SCHRITT 4: Stimme (Browser-eigene Funktionen, kostenlos) ===== */
+function bestVoice(){
+  const de=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').startsWith('de'));
+  const score=v=>{const n=v.name.toLowerCase();let p=0;
+    if(n.includes('premium'))p+=30;if(n.includes('enhanced')||n.includes('erweitert'))p+=20;
+    if(/anna|markus|petra|viktor|yannick/.test(n))p+=5;if(v.localService)p+=1;return p};
+  return de.sort((a,b)=>score(b)-score(a))[0];
+}
 function speak(text){
   if(!$('voice').checked||!('speechSynthesis' in window))return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text.replace(/[*#_`]/g,''));u.lang='de-DE';
-  const v=speechSynthesis.getVoices().find(v=>v.lang.startsWith('de'));if(v)u.voice=v;
+  const v=bestVoice();if(v)u.voice=v;
   u.onstart=()=>document.body.classList.add('speaking');
   u.onend=u.onerror=()=>document.body.classList.remove('speaking');
   speechSynthesis.speak(u);
@@ -179,7 +186,7 @@ async function askAI(text){
 /* ===== SCHRITT 8: Alles verbinden ===== */
 $('chatForm').onsubmit=e=>{e.preventDefault();const v=$('chatIn').value;$('chatIn').value='';handle(v)};
 $('taskForm').onsubmit=e=>{e.preventDefault();const v=$('taskIn').value.trim();if(!v)return;tasks.push({text:v,done:false});save('j_tasks',tasks);$('taskIn').value='';render()};
-speechSynthesis.onvoiceschanged=()=>{};
+speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices()};
 render();
 reply('Systeme online. Wie kann ich helfen?');
 </script>
