@@ -253,7 +253,7 @@ async function speak(text){
 
 /* ===== Spracherkennung + Gesprächsmodus ===== */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let rec=null;
+let rec=null,listenTries=0;
 function syncUI(){$('convoBtn').classList.toggle('on',convo);$('mic').classList.toggle('on',!!rec)}
 function startListen(){
   if(!SR){say('Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Safari, Chrome oder Edge.','sys');convo=false;syncUI();return}
@@ -266,13 +266,18 @@ function startListen(){
     if(e.error==='not-allowed'||e.error==='service-not-allowed'){convo=false;say('Mikrofon-Zugriff verweigert. Erlaube ihn in den Browser-Einstellungen.','sys')}
     else if(e.error!=='no-speech'&&e.error!=='aborted')say('Mikrofon-Fehler: '+e.error,'sys')};
   rec.onend=()=>{document.body.classList.remove('listening');rec=null;syncUI();if(!got)afterSpeak()};
-  try{rec.start()}catch{rec=null}
+  try{
+    rec.start();listenTries=0;
+    /* Notbremse: hängt die Erkennung fest, wird sie beendet und neu gestartet */
+    const me=rec;const w=setTimeout(()=>{if(rec===me){try{me.abort()}catch{}setTimeout(()=>{if(rec===me){rec=null;syncUI();afterSpeak()}},500)}},15000);
+    me.addEventListener('end',()=>clearTimeout(w));
+  }catch{rec=null;if(convo&&listenTries++<6)setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},700)}
 }
 function afterSpeak(){
   if(!convo)return;
-  setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},250);
+  setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},500);
 }
-$('mic').onclick=()=>{if(rec)rec.stop();else startListen()};
+$('mic').onclick=()=>{if(rec)rec.stop();else{convo=true;syncUI();startListen()}};
 $('convoBtn').onclick=()=>{convo=!convo;syncUI();if(convo)startListen();else if(rec)rec.abort()};
 $('hangup').onclick=()=>{convo=false;stopSpeech();if(rec)rec.abort();closeCam();syncUI()};
 $('reset').onclick=()=>{history=[];$('log').replaceChildren();stopSpeech();say('Unterhaltung zurückgesetzt.','sys')};
