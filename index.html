@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+<title>J.A.R.V.I.S.</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ===== SCHRITT 1: Aussehen (CSS) ===== */
+:root{--bg:#03101a;--panel:#07202f;--line:#1b5a73;--cyan:#4de3ff;--gold:#f2b84b;--text:#cdeefa;--dim:#6d9bb0}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:radial-gradient(circle at 50% 30%,#0a2a3d,var(--bg) 65%);color:var(--text);font-family:Rajdhani,"Segoe UI",sans-serif;font-size:18px;}
+main{display:grid;grid-template-columns:260px 1fr 260px;gap:16px;padding:16px;height:100vh}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;min-height:0}
+h2{margin:0 0 10px;font-size:18px;font-weight:600;color:var(--gold);letter-spacing:.08em}
+ul{list-style:none;margin:0;padding:0;overflow:auto;flex:1}
+li{padding:6px 0;border-bottom:1px solid #0f3445;display:flex;justify-content:space-between;gap:8px;color:var(--text)}
+li button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:18px}
+li.done span{text-decoration:line-through;color:var(--dim)}
+#core{display:flex;flex-direction:column;align-items:center;min-height:0}
+.reactor{position:relative;width:150px;height:150px;flex:none;margin:4px 0 12px}
+.reactor i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:.8}
+.reactor i:nth-child(1){animation:spin 14s linear infinite;border-style:dashed}
+.reactor i:nth-child(2){inset:18px;border-color:var(--gold);animation:spin 9s linear infinite reverse;border-style:dotted}
+.reactor i:nth-child(3){inset:40px;box-shadow:0 0 22px var(--cyan) inset}
+.reactor b{position:absolute;inset:60px;border-radius:50%;background:var(--cyan);box-shadow:0 0 30px 8px var(--cyan);animation:pulse 3s ease-in-out infinite}
+body.listening .reactor b{background:var(--gold);box-shadow:0 0 40px 12px var(--gold);animation-duration:.8s}
+body.speaking .reactor b{animation-duration:.5s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{transform:scale(.75);opacity:.7}}
+#log{flex:1;overflow:auto;width:100%;display:flex;flex-direction:column;gap:8px;padding:4px}
+.msg{max-width:85%;padding:8px 12px;border-radius:4px;line-height:1.35;white-space:pre-wrap}
+.me{align-self:flex-end;background:#0d3a50;border:1px solid var(--line)}
+.ai{align-self:flex-start;border-left:3px solid var(--cyan);background:#06182414}
+.sys{align-self:center;color:var(--dim);font-size:16px}
+form{display:flex;gap:8px;width:100%;margin-top:10px}
+input,select{background:#031520;border:1px solid var(--line);color:var(--text);border-radius:4px;padding:9px;font:inherit;min-width:0}
+form input{flex:1}
+button.go{background:transparent;border:1px solid var(--cyan);color:var(--cyan);border-radius:4px;padding:0 14px;font:inherit;cursor:pointer}
+button.go:hover,button.go.on{background:var(--cyan);color:var(--bg)}
+label{display:block;color:var(--dim);font-size:16px;margin:8px 0 3px}
+.side input{width:100%}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:900px){main{grid-template-columns:1fr;height:auto;padding:10px}#core{order:-1;height:calc(100svh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}section{max-height:50vh}input,select{font-size:16px}.reactor{width:110px;height:110px}.reactor i:nth-child(2){inset:13px}.reactor i:nth-child(3){inset:30px}.reactor b{inset:45px}}
+@media(prefers-reduced-motion:reduce){.reactor i,.reactor b{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <!-- Linke Seite: Aufgaben -->
+  <section class="side">
+    <h2>Aufgaben</h2>
+    <ul id="tasks"></ul>
+    <form id="taskForm"><input id="taskIn" placeholder="Neue Aufgabe" autocomplete="off"><button class="go">+</button></form>
+  </section>
+
+  <!-- Mitte: Reaktor + Chat -->
+  <section id="core">
+    <div class="reactor"><i></i><i></i><i></i><b></b></div>
+    <div id="log" aria-live="polite"></div>
+    <form id="chatForm">
+      <button type="button" class="go" id="mic" title="Sprechen">Mikro</button>
+      <input id="chatIn" placeholder="Schreibe oder sprich mit JARVIS" autocomplete="off">
+      <button class="go">Senden</button>
+    </form>
+  </section>
+
+  <!-- Rechte Seite: Gedächtnis + Einstellungen -->
+  <section class="side">
+    <h2>Gedächtnis</h2>
+    <ul id="mem"></ul>
+    <label for="key">Gemini API-Key (kostenlos)</label>
+    <input id="key" type="password" placeholder="AIza...">
+    <label for="model">Modell</label>
+    <input id="model" value="gemini-2.5-flash">
+    <label><input type="checkbox" id="web" style="width:auto"> Websuche (Google)</label>
+    <label><input type="checkbox" id="voice" style="width:auto" checked> Sprachausgabe</label>
+  </section>
+</main>
+
+<script>
+/* ===== SCHRITT 2: Speicher (localStorage = Daten bleiben im Browser) ===== */
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+let tasks=load('j_tasks',[]), memory=load('j_mem',[]), history=[];
+const $=id=>document.getElementById(id);
+$('key').value=load('j_key',''); $('model').value=load('j_model','gemini-2.5-flash');
+$('web').checked=load('j_web',false); $('voice').checked=load('j_voice',true);
+['key','model'].forEach(i=>$(i).onchange=()=>save('j_'+i,$(i).value.trim()));
+$('web').onchange=()=>save('j_web',$('web').checked);
+$('voice').onchange=()=>{save('j_voice',$('voice').checked);speechSynthesis.cancel()};
+
+/* ===== SCHRITT 3: Anzeige ===== */
+function say(text,cls){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;$('log').append(d);$('log').scrollTop=1e9}
+function renderList(id,items,onDel,onTog){
+  const ul=$(id);ul.replaceChildren();
+  items.forEach((it,i)=>{
+    const li=document.createElement('li');if(it.done)li.className='done';
+    const s=document.createElement('span');s.textContent=it.text;if(onTog){s.style.cursor='pointer';s.onclick=()=>onTog(i)}
+    const b=document.createElement('button');b.textContent='×';b.title='Löschen';b.onclick=()=>onDel(i);
+    li.append(s,b);ul.append(li);
+  });
+}
+function render(){
+  renderList('tasks',tasks,i=>{tasks.splice(i,1);save('j_tasks',tasks);render()},i=>{tasks[i].done=!tasks[i].done;save('j_tasks',tasks);render()});
+  renderList('mem',memory,i=>{memory.splice(i,1);save('j_mem',memory);render()});
+}
+
+/* ===== SCHRITT 4: Stimme (Browser-eigene Funktionen, kostenlos) ===== */
+function speak(text){
+  if(!$('voice').checked||!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.replace(/[*#_`]/g,''));u.lang='de-DE';
+  const v=speechSynthesis.getVoices().find(v=>v.lang.startsWith('de'));if(v)u.voice=v;
+  u.onstart=()=>document.body.classList.add('speaking');
+  u.onend=u.onerror=()=>document.body.classList.remove('speaking');
+  speechSynthesis.speak(u);
+}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+$('mic').onclick=()=>{
+  if(!SR){say('Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Chrome oder Edge.','sys');return}
+  if(rec){rec.stop();return}
+  rec=new SR();rec.lang='de-DE';rec.interimResults=false;
+  rec.onstart=()=>{document.body.classList.add('listening');$('mic').classList.add('on')};
+  rec.onresult=e=>handle(e.results[0][0].transcript);
+  rec.onerror=e=>say('Mikrofon-Fehler: '+e.error,'sys');
+  rec.onend=()=>{document.body.classList.remove('listening');$('mic').classList.remove('on');rec=null};
+  rec.start();
+};
+
+/* ===== SCHRITT 5: Erinnerungen ===== */
+function remind(ms,text){
+  setTimeout(()=>{const m='Erinnerung: '+text;say(m,'ai');speak(m);
+    try{if(Notification.permission==='granted')new Notification('JARVIS',{body:text})}catch{}},ms);
+}
+
+/* ===== SCHRITT 6: Befehle erkennen, sonst KI fragen ===== */
+function reply(t){say(t,'ai');speak(t)}
+async function handle(input){
+  const text=input.trim();if(!text)return;
+  say(text,'me');let m;
+  if(m=text.match(/^merk(?:e)? dir,? (?:dass )?(.+)/i)){memory.push({text:m[1]});save('j_mem',memory);render();return reply('Gemerkt: '+m[1])}
+  if(/^(vergiss alles|lösche (das )?gedächtnis)/i.test(text)){memory=[];save('j_mem',memory);render();return reply('Gedächtnis gelöscht.')}
+  if(/was weißt du (alles )?über mich/i.test(text))return reply(memory.length?'Das weiß ich: '+memory.map(x=>x.text).join('; '):'Ich weiß noch nichts über dich. Sag "Merk dir ...".');
+  if(m=text.match(/^(?:neue )?aufgabe:? (.+)/i)){tasks.push({text:m[1],done:false});save('j_tasks',tasks);render();return reply('Aufgabe hinzugefügt: '+m[1])}
+  if(/^(welche|zeige?|liste) .*aufgaben/i.test(text)){const o=tasks.filter(t=>!t.done);return reply(o.length?'Offen: '+o.map(t=>t.text).join(', '):'Keine offenen Aufgaben.')}
+  if(m=text.match(/^erinnere mich in (\d+) (sekunden?|minuten?|stunden?) (?:an |daran,? )?(.+)/i)){
+    const n=+m[1],u=m[2][0].toLowerCase(),ms=n*(u==='s'?1e3:u==='m'?6e4:36e5);
+    try{Notification.requestPermission()}catch{}
+    remind(ms,m[3]);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
+  if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
+  await askAI(text);
+}
+
+/* ===== SCHRITT 7: KI-Chat (Google Gemini, kostenloses Kontingent) ===== */
+async function askAI(text){
+  const key=$('key').value.trim();
+  if(!key)return reply('Für freie Gespräche brauche ich einen Gemini API-Key. Trage ihn rechts ein (kostenlos über aistudio.google.com).');
+  history.push({role:'user',parts:[{text}]});history=history.slice(-20);
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor, und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Heutiges Datum: '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'.';
+  const body={systemInstruction:{parts:[{text:sys}]},contents:history};
+  if($('web').checked)body.tools=[{google_search:{}}];
+  say('…','sys');const wait=$('log').lastChild;
+  try{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${$('model').value.trim()}:generateContent?key=${encodeURIComponent(key)}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();wait.remove();
+    if(!r.ok)return reply('Fehler von der KI: '+(d.error?.message||r.status));
+    const out=d.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'Keine Antwort erhalten.';
+    history.push({role:'model',parts:[{text:out}]});reply(out);
+  }catch(e){wait.remove();reply('Verbindung fehlgeschlagen. Bist du online?')}
+}
+
+/* ===== SCHRITT 8: Alles verbinden ===== */
+$('chatForm').onsubmit=e=>{e.preventDefault();const v=$('chatIn').value;$('chatIn').value='';handle(v)};
+$('taskForm').onsubmit=e=>{e.preventDefault();const v=$('taskIn').value.trim();if(!v)return;tasks.push({text:v,done:false});save('j_tasks',tasks);$('taskIn').value='';render()};
+speechSynthesis.onvoiceschanged=()=>{};
+render();
+reply('Systeme online. Wie kann ich helfen?');
+</script>
+</body>
+</html>
