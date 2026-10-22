@@ -60,6 +60,9 @@ nav{display:flex;justify-content:space-around;flex:none;margin:0 16px calc(10px 
 nav button{flex:1;max-width:76px;height:46px;background:none;border:0;color:var(--dim);border-radius:23px;display:grid;place-items:center;padding:0}
 nav button.on{color:var(--red);background:rgba(214,64,47,.14)}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.go{border:0;border-radius:999px;background:var(--red);color:#fff;font-weight:700;padding:10px 18px}
+.go.no{background:rgba(0,0,0,.08);color:var(--ink)}
+.btns{display:flex;gap:8px}
 #cam{position:fixed;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
 #cam.on{display:flex}
 #camV{flex:1;min-height:0;width:100%;object-fit:cover}
@@ -93,6 +96,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke
 <section class="view" id="v-chat">
   <div id="chatHost" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-top:14px"></div>
   <form id="chatForm">
+    <button type="button" class="round" id="attach" aria-label="Bild oder Datei anhängen">&#128206;</button><input type="file" id="file" accept="image/*,.txt,.md,.csv,.json" hidden>
     <input id="chatIn" placeholder="Schreibe mit JARVIS" autocomplete="off">
     <button class="round fill" aria-label="Senden">&#8593;</button>
   </form>
@@ -106,6 +110,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke
 
 <section class="view scroll" id="v-set">
   <div class="panel"><h2>Gedächtnis</h2><ul id="mem"></ul><div style="color:var(--dim);font-size:15px">Sag: &quot;Merk dir, dass ...&quot;</div></div>
+  <div class="panel"><h2>Automationen</h2><ul id="autos"></ul><div style="color:var(--dim);font-size:15px">Laufen nur, solange dieser Tab offen ist. Sag &quot;Stopp alle Automationen&quot;.</div></div>
   <div class="panel"><h2>Einstellungen</h2>
     <label for="okey">OpenAI API-Key</label>
     <input id="okey" type="password" placeholder="sk-..." autocomplete="off">
@@ -297,12 +302,12 @@ async function route(input){
   if(m=text.match(/^erinnere mich in (\d+) (sekunden?|minuten?|stunden?) (?:an |daran,? )?(.+)/i)){
     const n=+m[1],u=m[2][0].toLowerCase(),ms=n*(u==='s'?1e3:u==='m'?6e4:36e5);
     try{Notification.requestPermission()}catch{}
-    remind(ms,m[3]);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
+    addAuto(ms/6e4,m[3],0);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
   if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
   if(/was siehst du|schau (mal )?(hier )?(hin|her|das an)|guck (mal )?(hier )?(hin|her)|was ist das (hier|da)|kannst du (das|mich) sehen|nimm (ein )?(foto|bild) auf/i.test(text))return lookAt(text);
   if(m=text.match(/(?:zeig|zeige|zeigst)(?: mir)?(?: ein| eine| mal)* (?:bilder|bild|fotos|foto)(?: von| vom| der| des| über)? (.+)/i))return showImage(m[1]);
   if(m=text.match(/^wie sieht (?:ein |eine |der |die |das )?(.+) aus/i))return showImage(m[1]);
-  if(/was (läuft|ist los|passiert).*welt|nachrichten|schlagzeilen|aktuelle news/i.test(text))return showNews();
+  if(/was (läuft|ist los|passiert).*welt|schlagzeilen|aktuelle (news|nachrichten)|^(die )?nachrichten( von heute)?$/i.test(text))return showNews();
   await askAI(text);
 }
 
@@ -358,25 +363,135 @@ async function showNews(){
   speak('Das sind die Schlagzeilen: '+items.map(i=>i.titel).join('. '));
 }
 
-/* ===== KI-Chat (OpenAI, mit Bild-Unterstützung) ===== */
+/* ===== Automationen ===== */
+let autos=[];
+function renderAutos(){const ul=$('autos');ul.replaceChildren();
+  autos.forEach((a,i)=>{const li=document.createElement('li'),sp=document.createElement('span'),b=document.createElement('button');
+    sp.textContent=a.text+(a.every?' (alle '+a.every+' Min.)':'');b.textContent='×';b.title='Stoppen';b.onclick=()=>stopAuto(i);li.append(sp,b);ul.append(li)});
+  if(!autos.length){const li=document.createElement('li');li.textContent='Keine aktiv.';ul.append(li)}}
+function stopAuto(i){const a=autos[i];if(!a)return;clearTimeout(a.id);clearInterval(a.id);autos.splice(i,1);renderAutos()}
+function addAuto(min,text,every){
+  try{Notification.requestPermission()}catch{}
+  const fire=()=>{const m='Erinnerung: '+text;say(m,'ai');speak(m);try{if(Notification.permission==='granted')new Notification('JARVIS',{body:text})}catch{}};
+  const a={text,every};
+  if(every)a.id=setInterval(fire,every*6e4);
+  else a.id=setTimeout(()=>{fire();const i=autos.indexOf(a);if(i>=0){autos.splice(i,1);renderAutos()}},min*6e4);
+  autos.push(a);renderAutos();
+}
+
+/* ===== Bestätigung vor wichtigen Aktionen ===== */
+function confirmCard(title,desc,go){
+  const d=document.createElement('div');d.className='msg ai card';
+  const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.textContent=desc;
+  const r=document.createElement('div');r.className='btns';
+  const ok=document.createElement('button');ok.className='go';ok.textContent='Bestätigen';
+  const no=document.createElement('button');no.className='go no';no.textContent='Abbrechen';
+  ok.onclick=()=>{d.remove();go()};no.onclick=()=>{d.remove();say('Abgebrochen.','sys')};
+  r.append(ok,no);d.append(b,p,r);$('log').append(d);$('log').scrollTop=1e9;
+}
+const openUrl=u=>/^https?:/.test(u)?window.open(u,'_blank'):(location.href=u);
+function appUrl(a){
+  const t=encodeURIComponent(a.text||''),tg=a.target||'',n=tg.replace(/[^\d+]/g,''),q=encodeURIComponent(tg);
+  return {call:'tel:'+n,facetime:'facetime:'+n,sms:'sms:'+n+'&body='+t,whatsapp:'https://wa.me/'+n.replace('+','')+'?text='+t,
+    email:'mailto:'+tg+'?subject='+encodeURIComponent(a.subject||'')+'&body='+t,maps:'https://maps.apple.com/?q='+q,
+    route:'https://maps.apple.com/?daddr='+q+'&dirflg='+({walk:'w',transit:'r'}[a.mode]||'d'),
+    youtube:'https://www.youtube.com/results?search_query='+q,music:'https://music.apple.com/search?term='+q,
+    web:/^https?:/.test(tg)?tg:'https://www.google.com/search?q='+q,shortcut:'shortcuts://run-shortcut?name='+q+'&input=text&text='+t}[a.type];
+}
+function icsUrl(e){
+  const f=x=>x.replace(/[-:]/g,'').slice(0,15),esc=x=>(x||'').replace(/[,;\\]/g,' ');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','UID:'+Date.now()+'@jarvis','DTSTAMP:'+new Date().toISOString().replace(/[-:]|\.\d+/g,''),
+    'DTSTART:'+f(e.start),'DTEND:'+f(e.end||e.start),'SUMMARY:'+esc(e.title),'LOCATION:'+esc(e.location),'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  return 'data:text/calendar;charset=utf8,'+encodeURIComponent(ics);
+}
+const place=()=>new Promise((ok,no)=>navigator.geolocation.getCurrentPosition(p=>ok(p.coords),no,{timeout:10000}));
+async function webSearch(q){
+  const key=$('okey').value.trim();let err='';
+  for(const tool of ['web_search','web_search_preview']){
+    const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:$('omodel').value.trim(),tools:[{type:tool}],input:q})});
+    const d=await r.json();
+    if(r.ok)return (d.output||[]).filter(o=>o.type==='message').flatMap(o=>o.content||[]).map(c=>c.text||'').join('')||'Keine Ergebnisse.';
+    err=d.error?.message||r.status;
+  }
+  return 'Suche fehlgeschlagen: '+err;
+}
+
+/* ===== Werkzeuge, die die KI selbst auswählt ===== */
+const S={type:'string'},N={type:'number'};
+const T=(name,description,properties={},required=[])=>({type:'function',function:{name,description,parameters:{type:'object',properties,required}}});
+const TOOLS=[
+  T('remember','Merkt dauerhaft eine Info über den Nutzer, auch Kontakte mit Telefonnummer ("Mama: +49...").',{text:S},['text']),
+  T('add_task','Fügt eine Aufgabe oder einen Einkaufslisten-Eintrag hinzu.',{text:S,list:{type:'string',enum:['aufgabe','einkauf']}},['text']),
+  T('done_task','Markiert eine Aufgabe als erledigt.',{text:S},['text']),
+  T('set_reminder','Erinnerung nach N Minuten; mit repeat wiederkehrend alle N Minuten.',{minutes:N,text:S,repeat:{type:'boolean'}},['minutes','text']),
+  T('open_app','Bereitet eine Aktion auf dem iPhone vor; der Nutzer bestätigt per Tipp. type: call, facetime, sms, whatsapp, email, maps, route, youtube, music, web, shortcut (iOS-Kurzbefehl, z.B. für Wecker, Lautstärke, Fernseher). target: Telefonnummer, E-Mail, Adresse, Suchbegriff, URL oder Kurzbefehl-Name. Nummern aus dem Gedächtnis nehmen, sonst nachfragen.',
+    {type:{type:'string',enum:['call','facetime','sms','whatsapp','email','maps','route','youtube','music','web','shortcut']},target:S,text:S,subject:S,mode:{type:'string',enum:['drive','walk','transit']}},['type','target']),
+  T('calendar_event','Erstellt einen Kalendertermin (nach Bestätigung). start/end als lokale ISO-Zeit, z.B. 2026-10-23T14:00:00.',{title:S,start:S,end:S,location:S},['title','start','end']),
+  T('web_search','Recherchiert aktuelle Infos im Internet: Nachrichten, Preise, Öffnungszeiten, Fahrpläne, Vergleiche, Hotels.',{query:S},['query']),
+  T('weather','Wetter für einen Ort; ohne Ort für den aktuellen Standort.',{city:S}),
+  T('get_location','Ermittelt den aktuellen Standort des Nutzers (mit Erlaubnis).'),
+  T('system_status','Online-Status, Verbindung, Speicher und Akku dieses Geräts.'),
+  T('stop_automations','Stoppt alle laufenden Erinnerungen und Automationen.')
+];
+const FN={
+  remember:a=>{memory.push({text:a.text});save('j_mem',memory);render();return 'gemerkt'},
+  add_task:a=>{tasks.push({text:(a.list==='einkauf'?'🛒 ':'')+a.text,done:false});save('j_tasks',tasks);render();return 'hinzugefügt'},
+  done_task:a=>{const t=tasks.find(x=>!x.done&&x.text.toLowerCase().includes(a.text.toLowerCase()));if(!t)return 'nicht gefunden';t.done=true;save('j_tasks',tasks);render();return 'erledigt: '+t.text},
+  set_reminder:a=>{addAuto(a.minutes,a.text,a.repeat?a.minutes:0);return 'Erinnerung gesetzt (läuft nur, solange der Tab offen ist)'},
+  open_app:a=>{const u=appUrl(a);if(!u)return 'Unbekannter Typ';
+    confirmCard('Aktion bestätigen',a.type+': '+a.target+(a.text?'\n„'+a.text+'“':''),()=>openUrl(u));
+    return 'Bestätigungskarte wird angezeigt; der Nutzer muss tippen.'},
+  calendar_event:a=>{confirmCard('Termin eintragen?',a.title+'\n'+a.start.replace('T',' ').slice(0,16)+(a.location?'\n'+a.location:''),()=>{location.href=icsUrl(a)});return 'Bestätigungskarte wird angezeigt.'},
+  web_search:a=>webSearch(a.query),
+  weather:async a=>{let la,lo,name='deinem Standort';
+    if(a.city){const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&name='+encodeURIComponent(a.city))).json();const r=g.results?.[0];if(!r)return 'Ort nicht gefunden';la=r.latitude;lo=r.longitude;name=r.name}
+    else{const c=await place();la=c.latitude;lo=c.longitude}
+    const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,precipitation,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3`)).json();
+    return name+': '+JSON.stringify({jetzt:w.current,tage:w.daily})},
+  get_location:async()=>{const c=await place();return JSON.stringify({lat:c.latitude,lon:c.longitude,genauigkeit_m:Math.round(c.accuracy)})},
+  system_status:async()=>{const o={online:navigator.onLine,verbindung:navigator.connection?.effectiveType,arbeitsspeicher_gb:navigator.deviceMemory};
+    try{o.speicher_mb_genutzt=Math.round((await navigator.storage.estimate()).usage/1e6)}catch{}
+    try{o.akku_prozent=Math.round((await navigator.getBattery()).level*100)}catch{o.akku='auf iOS nicht auslesbar'}return JSON.stringify(o)},
+  stop_automations:()=>{while(autos.length)stopAuto(0);return 'alle gestoppt'}
+};
+
+/* ===== KI-Chat (OpenAI, Bilder + Werkzeuge) ===== */
 async function askAI(text,imageUrl){
   const key=$('okey').value.trim();
   if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn unter Einstellungen ein.');
   history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);
-  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Wenn der Nutzer ein Foto der Kamera schickt, beschreibe oder beantworte genau das, was darauf zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'.';
+  const open=tasks.filter(t=>!t.done).map(t=>t.text).join('; ')||'keine';
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch, höflich, präzise, mit trockenem Humor und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. Nachrichten, Anrufe und Termine werden dem Nutzer immer zur Bestätigung angezeigt; sende nie etwas ohne Angabe von Empfänger und Inhalt und frage bei Unklarheit nach. Du hast KEINEN Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, wenn danach gefragt wird. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
   const msgs=[{role:'system',content:sys},...history];
   if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
   try{
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:$('omodel').value.trim(),messages:msgs})});
-    const d=await r.json();wait.remove();
-    if(!r.ok)return reply('Fehler von OpenAI: '+(d.error?.message||r.status));
-    const out=d.choices?.[0]?.message?.content?.trim()||'Keine Antwort erhalten.';
-    history.push({role:'assistant',content:out});reply(out);
+    for(let i=0;i<6;i++){
+      const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:$('omodel').value.trim(),messages:msgs,tools:TOOLS})});
+      const d=await r.json();
+      if(!r.ok){wait.remove();return reply('Fehler von OpenAI: '+(d.error?.message||r.status))}
+      const m=d.choices?.[0]?.message||{};
+      if(!m.tool_calls?.length){wait.remove();const out=(m.content||'').trim()||'Erledigt.';history.push({role:'assistant',content:out});return reply(out)}
+      msgs.push(m);
+      for(const c of m.tool_calls){let res;
+        try{res=await FN[c.function.name](JSON.parse(c.function.arguments||'{}'))}catch(e){res='Fehler: '+(e.message||e)}
+        msgs.push({role:'tool',tool_call_id:c.id,content:String(res)})}
+    }
+    wait.remove();reply('Das hat zu viele Schritte gebraucht. Versuch es bitte einfacher.');
   }catch(e){wait.remove();reply('Verbindung fehlgeschlagen. Bist du online?')}
 }
+
+/* ===== Dateien & Bilder anhängen ===== */
+$('attach').onclick=()=>$('file').click();
+$('file').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const img=f.type.startsWith('image/'),q=$('chatIn').value.trim()||(img?'Beschreibe und analysiere dieses Bild.':'Fasse diese Datei zusammen.');$('chatIn').value='';
+  if(img){const url=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});say(q,'me');addCard('Bild','',url);run(()=>askAI(q,url))}
+  else{const t=(await f.text()).slice(0,12000);say(q+' ('+f.name+')','me');run(()=>askAI(q+'\n\nDatei '+f.name+':\n'+t))}
+};
 
 /* ===== Alles verbinden ===== */
 $('chatForm').onsubmit=e=>{e.preventDefault();const v=$('chatIn').value;$('chatIn').value='';handle(v)};
@@ -392,7 +507,8 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 });
 new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
-reply('Systeme online. Wie kann ich helfen?');
+renderAutos();
+{const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+'. Systeme online.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Wie kann ich helfen?')}
 </script>
 </body>
 </html>
