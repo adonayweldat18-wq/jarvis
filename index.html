@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#160504">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 <title>J.A.R.V.I.S.</title>
@@ -74,34 +75,34 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke
 :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
 /* ===== Iron-Man-HUD ===== */
-:root{--terra:#0aa8d8;--red:#27d9ff;--ink:#d8f6ff;--dim:#6fa3b8;--card:rgba(8,40,60,.62);--line:rgba(39,217,255,.28)}
-body{background:radial-gradient(ellipse at 50% 20%,#0b3550 0%,#04141f 55%,#02080d 100%)}
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.07;background-image:linear-gradient(#27d9ff 1px,transparent 1px),linear-gradient(90deg,#27d9ff 1px,transparent 1px);background-size:38px 38px}
-h1{font-size:24px;font-weight:300;letter-spacing:.32em;text-transform:uppercase;color:#27d9ff;text-shadow:0 0 14px rgba(39,217,255,.7)}
+:root{--terra:#d9261c;--red:#ff3b30;--ink:#ffe9e6;--dim:#b88a85;--card:rgba(62,14,12,.62);--line:rgba(255,59,48,.28)}
+body{background:radial-gradient(ellipse at 50% 20%,#3d0e0b 0%,#160504 55%,#0a0202 100%)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.07;background-image:linear-gradient(#ff3b30 1px,transparent 1px),linear-gradient(90deg,#ff3b30 1px,transparent 1px);background-size:38px 38px}
+h1{font-size:24px;font-weight:300;letter-spacing:.32em;text-transform:uppercase;color:#ff3b30;text-shadow:0 0 14px rgba(255,59,48,.7)}
 #status,#conn{font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.14em;font-size:12px}
-#status::before{content:"\25CF ";color:#27d9ff}
-.hb{background:rgba(39,217,255,.08);border:1px solid var(--line)}
-.hb.red{background:rgba(39,217,255,.08)}
-.hb.on,.round.fill,.round.on,.go{background:#27d9ff;color:#00131c;box-shadow:0 0 16px rgba(39,217,255,.6)}
-.orb{width:170px;height:170px;position:relative;background:radial-gradient(circle,#fff 0 6%,#c9f8ff 12%,#27d9ff 30%,rgba(39,217,255,.16) 56%,transparent 70%);box-shadow:0 0 40px rgba(39,217,255,.55),0 0 90px rgba(39,217,255,.25)}
+#status::before{content:"\25CF ";color:#ff3b30}
+.hb{background:rgba(255,59,48,.08);border:1px solid var(--line)}
+.hb.red{background:rgba(255,59,48,.08)}
+.hb.on,.round.fill,.round.on,.go{background:#ff3b30;color:#1a0200;box-shadow:0 0 16px rgba(255,59,48,.6)}
+.orb{width:170px;height:170px;position:relative;background:radial-gradient(circle,#fff 0 6%,#ffd9d4 12%,#ff3b30 30%,rgba(255,59,48,.16) 56%,transparent 70%);box-shadow:0 0 40px rgba(255,59,48,.55),0 0 90px rgba(255,59,48,.25)}
 .orb::before,.orb::after{content:"";position:absolute;border-radius:50%}
-.orb::before{inset:-14px;border:2px dashed rgba(39,217,255,.7);animation:spin 14s linear infinite}
-.orb::after{inset:14px;border:3px solid transparent;border-top-color:#27d9ff;border-bottom-color:#27d9ff;box-shadow:0 0 12px #27d9ff;animation:spin 5s linear infinite reverse}
-body.listening .orb{box-shadow:0 0 0 12px rgba(39,217,255,.14),0 0 60px rgba(39,217,255,.8)}
+.orb::before{inset:-14px;border:2px dashed rgba(255,59,48,.7);animation:spin 14s linear infinite}
+.orb::after{inset:14px;border:3px solid transparent;border-top-color:#ff3b30;border-bottom-color:#ff3b30;box-shadow:0 0 12px #ff3b30;animation:spin 5s linear infinite reverse}
+body.listening .orb{box-shadow:0 0 0 12px rgba(255,59,48,.14),0 0 60px rgba(255,59,48,.8)}
 body.listening .orb::after{animation-duration:1.4s}
 body.speaking .orb::before{animation-duration:3s}
 body.speaking .orb::after{animation-duration:1.2s}
 @keyframes spin{to{transform:rotate(360deg)}}
 .msg{border-radius:10px;border:1px solid var(--line)}
-.me{background:rgba(10,168,216,.3);border-color:rgba(39,217,255,.6);color:#fff}
+.me{background:rgba(217,38,28,.3);border-color:rgba(255,59,48,.6);color:#fff}
 .ai{background:var(--card)}
 .sys{border:0;font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .panel{border:1px solid var(--line)}
-input,select{background:rgba(4,25,38,.85);border:1px solid var(--line);color:var(--ink)}
+input,select{background:rgba(32,7,6,.85);border:1px solid var(--line);color:var(--ink)}
 ::placeholder{color:var(--dim)}
-li{border-bottom-color:rgba(39,217,255,.14)}
-nav{background:rgba(4,25,38,.75);border:1px solid var(--line)}
-nav button.on{background:rgba(39,217,255,.16);box-shadow:0 0 12px rgba(39,217,255,.4)}
+li{border-bottom-color:rgba(255,59,48,.14)}
+nav{background:rgba(32,7,6,.75);border:1px solid var(--line)}
+nav button.on{background:rgba(255,59,48,.16);box-shadow:0 0 12px rgba(255,59,48,.4)}
 .pill{background:rgba(255,59,48,.14);color:#ff7468;border:1px solid rgba(255,59,48,.5)}
 .go.no{background:rgba(255,255,255,.1);color:var(--ink);box-shadow:none}
 @media(prefers-reduced-motion:reduce){.orb::before,.orb::after{animation:none}}
@@ -142,15 +143,17 @@ nav button.on{background:rgba(39,217,255,.16);box-shadow:0 0 12px rgba(39,217,25
 
 <section class="view scroll" id="v-set">
   <div class="panel"><h2>Gedächtnis</h2><ul id="mem"></ul><div style="color:var(--dim);font-size:15px">Sag: &quot;Merk dir, dass ...&quot;</div></div>
-  <div class="panel"><h2>Automationen</h2><ul id="autos"></ul><div style="color:var(--dim);font-size:15px">Laufen nur, solange dieser Tab offen ist. Sag &quot;Stopp alle Automationen&quot;.</div></div>
+  <div class="panel"><h2>Automationen</h2><ul id="autos"></ul><div style="color:var(--dim);font-size:15px">Laufen nur, solange die App offen ist. Sag &quot;Stopp alle Automationen&quot;.</div></div>
   <div class="panel"><h2>Einstellungen</h2>
     <label for="okey">OpenAI API-Key</label>
     <input id="okey" type="password" placeholder="sk-..." autocomplete="off">
     <label for="omodel">Modell</label>
     <input id="omodel" value="gpt-4o-mini">
     <label for="ovoice">Stimme</label>
-    <select id="ovoice"><option>ballad</option><option>ash</option><option>onyx</option><option>echo</option><option>fable</option><option>coral</option></select>
+    <select id="ovoice"><option>ballad</option><option>ash</option><option>onyx</option><option>echo</option><option>fable</option><option>coral</option><option>alloy</option><option>nova</option><option>sage</option><option>shimmer</option><option>verse</option></select>
+    <div style="color:var(--dim);font-size:14px;margin-top:6px">Oder sag: &quot;Wechsle die Stimme&quot;.</div>
     <label class="chk"><input type="checkbox" id="voice" checked> Sprachausgabe</label>
+    <label class="chk"><input type="checkbox" id="snap" checked> Schnipp-Erkennung (Fingerschnippen weckt JARVIS)</label>
   </div>
 </section>
 
@@ -181,6 +184,8 @@ $('okey').value=load('j_okey',''); $('omodel').value=load('j_omodel','gpt-4o-min
 $('ovoice').value=load('j_ovoice','ballad'); $('voice').checked=load('j_voice',true);
 ['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>{save('j_'+i,$(i).value.trim());conn()});
 $('voice').onchange=()=>{save('j_voice',$('voice').checked);stopSpeech()};
+$('snap').checked=load('j_snap',true);
+$('snap').onchange=()=>{save('j_snap',$('snap').checked);if($('snap').checked)snapStart();else snapStop()};
 function conn(){const k=$('okey').value.trim();$('conn').textContent=!navigator.onLine?'offline':k?'verbunden':'kein Key'}
 addEventListener('online',conn);addEventListener('offline',conn);conn();
 
@@ -239,7 +244,7 @@ async function speak(text){
       const jobs=parts.map(p=>fetch('https://api.openai.com/v1/audio/speech',{method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
         body:JSON.stringify({model:'gpt-4o-mini-tts',voice:$('ovoice').value,input:p,
-          instructions:'Sprich Deutsch mit dezentem britischem Akzent wie J.A.R.V.I.S. aus Iron Man: tiefe, ruhige, souveräne Männerstimme, elegant und trocken-ironisch, zügiges Tempo, ohne lange Pausen.',response_format:'mp3'})})
+          instructions:'Sprich natürliches Deutsch wie ein entspannter, selbstsicherer Assistent: ruhige, tiefe Stimme, locker und freundlich, leicht trocken-ironisch, zügiges Tempo, keine langen Pausen.',response_format:'mp3'})})
         .then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>URL.createObjectURL(b)));
       jobs.forEach(j=>j.catch(()=>{}));
       speechSynthesis.cancel();
@@ -259,9 +264,10 @@ function startListen(){
   if(!SR){say('Spracherkennung wird in diesem Browser nicht unterstützt. Nutze Safari, Chrome oder Edge.','sys');convo=false;syncUI();return}
   if(rec)return;
   stopSpeech();
-  let got=false;rec=new SR();rec.lang='de-DE';rec.interimResults=false;
+  snapStop();let got=false;rec=new SR();rec.lang='de-DE';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
   rec.onstart=()=>{document.body.classList.add('listening');syncUI()};
-  rec.onresult=e=>{got=true;handle(e.results[0][0].transcript)};
+  rec.onresult=e=>{let t='',fin=false;for(let i=e.resultIndex;i<e.results.length;i++){t+=e.results[i][0].transcript;if(e.results[i].isFinal)fin=true}
+    if(fin){got=true;handle(t)}else $('status').textContent='… '+t.slice(-28)};
   rec.onerror=e=>{
     if(e.error==='not-allowed'||e.error==='service-not-allowed'){convo=false;say('Mikrofon-Zugriff verweigert. Erlaube ihn in den Browser-Einstellungen.','sys')}
     else if(e.error!=='no-speech'&&e.error!=='aborted')say('Mikrofon-Fehler: '+e.error,'sys')};
@@ -274,13 +280,47 @@ function startListen(){
   }catch{rec=null;if(convo&&listenTries++<6)setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},700)}
 }
 function afterSpeak(){
-  if(!convo)return;
+  if(!convo){setTimeout(()=>{if(!convo&&!rec&&!busy&&!speakingNow)snapStart()},700);return}
   setTimeout(()=>{if(convo&&!rec&&!busy&&!speakingNow)startListen()},500);
 }
 $('mic').onclick=()=>{if(rec)rec.stop();else{convo=true;syncUI();startListen()}};
 $('convoBtn').onclick=()=>{convo=!convo;syncUI();if(convo)startListen();else if(rec)rec.abort()};
-$('hangup').onclick=()=>{convo=false;stopSpeech();if(rec)rec.abort();closeCam();syncUI()};
+$('hangup').onclick=()=>{convo=false;stopSpeech();if(rec)rec.abort();closeCam();syncUI();setTimeout(snapStart,800)};
 $('reset').onclick=()=>{history=[];$('log').replaceChildren();stopSpeech();say('Unterhaltung zurückgesetzt.','sys')};
+
+/* ===== Schnipp-Erkennung ===== */
+let snapCtx=null,snapStream=null,snapTimer=null,snapBase=0.01,snapLast=0,snapBusy=false;
+async function snapStart(){
+  if(snapCtx||snapBusy||!$('snap').checked||rec||convo||speakingNow||!navigator.mediaDevices)return;
+  snapBusy=true;
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    if(rec||convo||speakingNow){st.getTracks().forEach(t=>t.stop());return}
+    snapStream=st;const AC=window.AudioContext||window.webkitAudioContext;snapCtx=new AC();
+    if(snapCtx.state==='suspended')await snapCtx.resume().catch(()=>{});
+    const an=snapCtx.createAnalyser();an.fftSize=1024;snapCtx.createMediaStreamSource(st).connect(an);
+    const buf=new Float32Array(an.fftSize),fq=new Uint8Array(an.frequencyBinCount),bw=snapCtx.sampleRate/an.fftSize;
+    snapTimer=setInterval(()=>{
+      an.getFloatTimeDomainData(buf);let s=0,pk=0;for(const v of buf){s+=v*v;const a=Math.abs(v);if(a>pk)pk=a}
+      const rms=Math.sqrt(s/buf.length);an.getByteFrequencyData(fq);
+      let hi=0,all=0;for(let i=0;i<fq.length;i++){all+=fq[i];if(i*bw>2000)hi+=fq[i]}
+      const now=Date.now();
+      if(pk>0.22&&rms>snapBase*6&&all&&hi/all>0.5&&now-snapLast>2500){snapLast=now;onSnap()}
+      snapBase=snapBase*0.97+rms*0.03;
+    },30);
+  }catch(e){
+    snapStop();
+    if(e&&(e.name==='NotAllowedError'||e.name==='SecurityError')){$('snap').checked=false;save('j_snap',false);say('Schnipp-Erkennung braucht den Mikrofon-Zugriff. Erlaube ihn in den Browser-Einstellungen.','sys')}
+  }finally{snapBusy=false}
+}
+function snapStop(){clearInterval(snapTimer);snapTimer=null;if(snapStream)snapStream.getTracks().forEach(t=>t.stop());snapStream=null;if(snapCtx){try{snapCtx.close()}catch{}}snapCtx=null}
+function onSnap(){
+  snapStop();convo=true;syncUI();
+  const hi=['Hey Boss, was läuft?','Ich bin da, Boss. Was steht an?','Hey Boss, was geht?'];
+  reply(hi[Math.floor(Math.random()*hi.length)]);
+  if(!$('voice').checked)startListen();
+}
+document.addEventListener('pointerdown',()=>{if($('snap').checked)snapStart()},{once:true});
 
 /* ===== Erinnerungen ===== */
 function remind(ms,text){
@@ -345,6 +385,16 @@ async function route(input){
     const n=+m[1],u=m[2][0].toLowerCase(),ms=n*(u==='s'?1e3:u==='m'?6e4:36e5);
     try{Notification.requestPermission()}catch{}
     addAuto(ms/6e4,m[3],0);return reply(`In Ordnung. Ich erinnere dich in ${n} ${m[2]} an ${m[3]}. Lass diesen Tab offen.`)}
+  if(/youtube/i.test(text)&&/öffn|start|geh |gehe |spiel|such|zeig|ruf|mach/i.test(text)){
+    let q=(text.match(/(?:suche|such|spiel(?:e)?)\s+(.+?)(?:\s+(?:auf|bei|in)\s+youtube)?$/i)||[])[1];
+    q=q&&q.replace(/^(?:auf|bei|in)\s+youtube\s*/i,'').replace(/^nach\s+/i,'').replace(/\byoutube\b/ig,'').trim();
+    return openNow(q?'https://www.youtube.com/results?search_query='+encodeURIComponent(q):'https://www.youtube.com/','YouTube');
+  }
+  if(/stimme/i.test(text)&&/wechsel|änder|andere|neue|nimm|nutze|stell/i.test(text)){
+    const V=[...$('ovoice').options].map(o=>o.value);
+    const next=V.find(v=>new RegExp('\\b'+v+'\\b','i').test(text))||V[(V.indexOf($('ovoice').value)+1)%V.length];
+    $('ovoice').value=next;save('j_ovoice',next);return reply('Stimme gewechselt zu '+next+'. So klinge ich jetzt, Boss.');
+  }
   if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
   if(/was siehst du|schau (mal )?(hier )?(hin|her|das an)|guck (mal )?(hier )?(hin|her)|was ist das (hier|da)|kannst du (das|mich) sehen|nimm (ein )?(foto|bild) auf/i.test(text))return lookAt(text);
   if(m=text.match(/(?:zeig|zeige|zeigst)(?: mir)?(?: ein| eine| mal)* (?:bilder|bild|fotos|foto)(?: von| vom| der| des| über)? (.+)/i))return showImage(m[1]);
@@ -432,6 +482,8 @@ function confirmCard(title,desc,go){
   r.append(ok,no);d.append(b,p,r);$('log').append(d);$('log').scrollTop=1e9;
 }
 const openUrl=u=>/^https?:/.test(u)?window.open(u,'_blank'):(location.href=u);
+/* öffnet sofort ohne Bestätigung; blockt iOS das neue Fenster, wird direkt dorthin gewechselt */
+const openNow=(u,label)=>{if(label)reply('Öffne '+label+'.');setTimeout(()=>{let w=null;try{w=window.open(u,'_blank')}catch{}if(!w)location.href=u},label?1100:0)};
 function appUrl(a){
   const t=encodeURIComponent(a.text||''),tg=a.target||'',n=tg.replace(/[^\d+]/g,''),q=encodeURIComponent(tg);
   return {call:'tel:'+n,facetime:'facetime:'+n,sms:'sms:'+n+'&body='+t,whatsapp:'https://wa.me/'+n.replace('+','')+'?text='+t,
@@ -444,7 +496,7 @@ function icsUrl(e){
   const f=x=>x.replace(/[-:]/g,'').slice(0,15),esc=x=>(x||'').replace(/[,;\\]/g,' ');
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','UID:'+Date.now()+'@jarvis','DTSTAMP:'+new Date().toISOString().replace(/[-:]|\.\d+/g,''),
     'DTSTART:'+f(e.start),'DTEND:'+f(e.end||e.start),'SUMMARY:'+esc(e.title),'LOCATION:'+esc(e.location),'END:VEVENT','END:VCALENDAR'].join('\r\n');
-  return 'data:text/calendar;charset=utf8,'+encodeURIComponent(ics);
+  return URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
 }
 const place=()=>new Promise((ok,no)=>navigator.geolocation.getCurrentPosition(p=>ok(p.coords),no,{timeout:10000}));
 async function webSearch(q){
@@ -467,7 +519,7 @@ const TOOLS=[
   T('add_task','Fügt eine Aufgabe oder einen Einkaufslisten-Eintrag hinzu.',{text:S,list:{type:'string',enum:['aufgabe','einkauf']}},['text']),
   T('done_task','Markiert eine Aufgabe als erledigt.',{text:S},['text']),
   T('set_reminder','Erinnerung nach N Minuten; mit repeat wiederkehrend alle N Minuten.',{minutes:N,text:S,repeat:{type:'boolean'}},['minutes','text']),
-  T('open_app','Bereitet eine Aktion auf dem iPhone vor; der Nutzer bestätigt per Tipp. type: call, facetime, sms, whatsapp, email, maps, route, youtube, music, web, shortcut (iOS-Kurzbefehl, z.B. für Wecker, Lautstärke, Fernseher). target: Telefonnummer, E-Mail, Adresse, Suchbegriff, URL oder Kurzbefehl-Name. Nummern aus dem Gedächtnis nehmen, sonst nachfragen.',
+  T('open_app','Öffnet YouTube, Musik, Karten, Routen, Webseiten und Kurzbefehle SOFORT ohne Rückfrage. Anrufe, Nachrichten und E-Mails werden dem Nutzer zur Bestätigung per Tipp angezeigt. type: call, facetime, sms, whatsapp, email, maps, route, youtube, music, web, shortcut (iOS-Kurzbefehl, z.B. für Wecker, Lautstärke, Fernseher). target: Telefonnummer, E-Mail, Adresse, Suchbegriff, URL oder Kurzbefehl-Name. Nummern aus dem Gedächtnis nehmen, sonst nachfragen.',
     {type:{type:'string',enum:['call','facetime','sms','whatsapp','email','maps','route','youtube','music','web','shortcut']},target:S,text:S,subject:S,mode:{type:'string',enum:['drive','walk','transit']}},['type','target']),
   T('calendar_event','Erstellt einen Kalendertermin (nach Bestätigung). start/end als lokale ISO-Zeit, z.B. 2026-10-23T14:00:00.',{title:S,start:S,end:S,location:S},['title','start','end']),
   T('web_search','Recherchiert aktuelle Infos im Internet: Nachrichten, Preise, Öffnungszeiten, Fahrpläne, Vergleiche, Hotels.',{query:S},['query']),
@@ -482,9 +534,10 @@ const FN={
   done_task:a=>{const t=tasks.find(x=>!x.done&&x.text.toLowerCase().includes(a.text.toLowerCase()));if(!t)return 'nicht gefunden';t.done=true;save('j_tasks',tasks);render();return 'erledigt: '+t.text},
   set_reminder:a=>{addAuto(a.minutes,a.text,a.repeat?a.minutes:0);return 'Erinnerung gesetzt (läuft nur, solange der Tab offen ist)'},
   open_app:a=>{const u=appUrl(a);if(!u)return 'Unbekannter Typ';
+    if(['youtube','music','maps','route','web','shortcut'].includes(a.type)){openNow(u);return 'Wird jetzt direkt geöffnet.'}
     confirmCard('Aktion bestätigen',a.type+': '+a.target+(a.text?'\n„'+a.text+'“':''),()=>openUrl(u));
     return 'Bestätigungskarte wird angezeigt; der Nutzer muss tippen.'},
-  calendar_event:a=>{confirmCard('Termin eintragen?',a.title+'\n'+a.start.replace('T',' ').slice(0,16)+(a.location?'\n'+a.location:''),()=>{location.href=icsUrl(a)});return 'Bestätigungskarte wird angezeigt.'},
+  calendar_event:a=>{confirmCard('Termin eintragen?',a.title+'\n'+a.start.replace('T',' ').slice(0,16)+(a.location?'\n'+a.location:''),()=>{const x=document.createElement('a');x.href=icsUrl(a);x.download='termin.ics';document.body.append(x);x.click();x.remove()});return 'Bestätigungskarte wird angezeigt.'},
   web_search:a=>webSearch(a.query),
   weather:async a=>{let la,lo,name='deinem Standort';
     if(a.city){const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&name='+encodeURIComponent(a.city))).json();const r=g.results?.[0];if(!r)return 'Ort nicht gefunden';la=r.latitude;lo=r.longitude;name=r.name}
@@ -504,7 +557,7 @@ async function askAI(text,imageUrl){
   if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn unter Einstellungen ein.');
   history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);
   const open=tasks.filter(t=>!t.done).map(t=>t.text).join('; ')||'keine';
-  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Antworte auf Deutsch wie der J.A.R.V.I.S. aus den Iron-Man-Filmen: ein souveräner, loyaler Butler mit britisch-trockener Ironie, der den Nutzer mit „Sir“ anspricht und siezt. Antworte höflich, präzise und knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. Nachrichten, Anrufe und Termine werden dem Nutzer immer zur Bestätigung angezeigt; sende nie etwas ohne Angabe von Empfänger und Inhalt und frage bei Unklarheit nach. Du hast KEINEN Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, wenn danach gefragt wird. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Sprich ganz normal und locker wie ein kluger Freund: duze den Nutzer, nenne ihn ab und zu „Boss“, mit trockenem Humor, aber ohne steife Floskeln. Antworte auf Deutsch, knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. YouTube, Karten und Webseiten öffnest du sofort ohne Rückfrage. Anrufe, Nachrichten und Termine zeigst du dem Nutzer immer zur Bestätigung an; sende nie etwas ohne Empfänger und Inhalt. Du kannst NICHT selbst in Webseiten klicken, Formulare ausfüllen oder Konten erstellen (z.B. Shopify) und hast keinen Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, öffne dann die passende Seite und führe den Nutzer Schritt für Schritt. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
   const msgs=[{role:'system',content:sys},...history];
   if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
@@ -550,7 +603,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
 renderAutos();
-{const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+', Sir. Alle Systeme einsatzbereit.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Was kann ich für Sie tun?')}
+{const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+', Boss. Alle Systeme laufen.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Was kann ich für dich tun?')}
 </script>
 </body>
 </html>
