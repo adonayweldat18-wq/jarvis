@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 <title>J.A.R.V.I.S.</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
 :root{--terra:#b85a3e;--red:#d6402f;--ink:#2a1f2d;--dim:#8a7d92;--card:rgba(255,255,255,.62)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -139,14 +142,20 @@ nav button.on{background:rgba(255,59,48,.16);box-shadow:0 0 12px rgba(255,59,48,
   <div class="panel"><h2>Aufgaben</h2><ul id="tasks"></ul>
     <form id="taskForm" class="row"><input id="taskIn" placeholder="Neue Aufgabe" autocomplete="off"><button class="round fill" aria-label="Hinzufügen">+</button></form>
   </div>
+  <div class="panel"><h2>Meine Apps</h2><ul id="apps"></ul><div style="color:var(--dim);font-size:15px">Sag: &quot;Bau mir eine App für ...&quot; – tippe eine App an, um sie zu öffnen.</div></div>
+  <div class="panel"><h2>Notizen</h2><ul id="notes"></ul><div style="color:var(--dim);font-size:15px">Sag: &quot;Notiere mir ...&quot; – tippe eine Notiz an, um sie ganz zu lesen.</div></div>
 </section>
 
 <section class="view scroll" id="v-set">
   <div class="panel"><h2>Gedächtnis</h2><ul id="mem"></ul><div style="color:var(--dim);font-size:15px">Sag: &quot;Merk dir, dass ...&quot;</div></div>
   <div class="panel"><h2>Automationen</h2><ul id="autos"></ul><div style="color:var(--dim);font-size:15px">Laufen nur, solange die App offen ist. Sag &quot;Stopp alle Automationen&quot;.</div></div>
   <div class="panel"><h2>Einstellungen</h2>
-    <label for="okey">OpenAI API-Key</label>
-    <input id="okey" type="password" placeholder="sk-..." autocomplete="off">
+    <label for="oprov">KI-Anbieter</label>
+    <select id="oprov"><option value="openai">OpenAI (bezahlt pro Nutzung, alle Funktionen)</option><option value="gemini">Google Gemini (kostenloser Key)</option><option value="custom">Eigener Anbieter (OpenAI-kompatibel)</option></select>
+    <div id="provHint" style="color:var(--dim);font-size:14px;margin-top:6px"></div>
+    <div id="baseRow" style="display:none"><label for="obase">Adresse (Base-URL)</label><input id="obase" placeholder="https://.../v1" autocomplete="off"></div>
+    <label for="okey">API-Key</label>
+    <input id="okey" type="password" placeholder="Key hier einfügen" autocomplete="off">
     <label for="omodel">Modell</label>
     <input id="omodel" value="gpt-4o-mini">
     <label for="ovoice">Stimme</label>
@@ -155,6 +164,16 @@ nav button.on{background:rgba(255,59,48,.16);box-shadow:0 0 12px rgba(255,59,48,
     <label class="chk"><input type="checkbox" id="voice" checked> Sprachausgabe</label>
     <label class="chk"><input type="checkbox" id="hq"> Bessere Spracherkennung (OpenAI, läuft in jedem Browser)</label>
     <label class="chk"><input type="checkbox" id="snap" checked> Schnipp-Erkennung (Fingerschnippen weckt JARVIS)</label>
+  </div>
+  <div class="panel"><h2>Laptop-Ordner</h2>
+    <div style="color:var(--dim);font-size:15px;margin-bottom:10px">Gib JARVIS Zugriff auf einen Ordner deines Laptops: Er kann darin Dateien suchen, lesen und neue Dateien (z.B. Apps) speichern. Funktioniert in Chrome und Edge am Computer. Nichts verlässt deinen Laptop, außer Text, den JARVIS der KI zum Antworten schickt.</div>
+    <div id="dirName" style="margin-bottom:10px">Kein Ordner verbunden.</div>
+    <div class="btns"><button class="go" id="dirBtn">Ordner verbinden</button><button class="go no" id="dirOff">Trennen</button></div>
+  </div>
+  <div class="panel"><h2>Daten-Backup</h2>
+    <div style="color:var(--dim);font-size:15px;margin-bottom:10px">Aufgaben, Notizen, Gedächtnis und Einstellungen (ohne API-Key) sichern oder auf ein anderes Gerät übertragen.</div>
+    <div class="btns"><button class="go" id="bkOut">Exportieren</button><button class="go no" id="bkIn">Importieren</button></div>
+    <input type="file" id="bkFile" accept=".json,application/json" hidden>
   </div>
 </section>
 
@@ -179,9 +198,22 @@ nav button.on{background:rgba(255,59,48,.16);box-shadow:0 0 12px rgba(255,59,48,
 /* ===== Speicher (localStorage = Daten bleiben im Browser) ===== */
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
-let tasks=load('j_tasks',[]), memory=load('j_mem',[]), history=[];
+let tasks=load('j_tasks',[]), memory=load('j_mem',[]), notes=load('j_notes',[]), history=load('j_hist',[]);
 const $=id=>document.getElementById(id);
 $('okey').value=load('j_okey',''); $('omodel').value=load('j_omodel','gpt-4o-mini');
+$('oprov').value=load('j_oprov','openai'); $('obase').value=load('j_obase','');
+/* Anbieter: OpenAI hat alle Funktionen; andere nur Chat + Werkzeuge (Stimme dann vom Gerät) */
+const PROV={openai:{base:'https://api.openai.com/v1',model:'gpt-4o-mini',hint:'Keine Monatsgebühr: Du lädst Guthaben auf (ab 5 $) und zahlst nur, was du nutzt. Key: platform.openai.com/api-keys'},
+  gemini:{base:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-2.5-flash',hint:'Kostenlos mit Tageslimit, ohne Kreditkarte. Key: aistudio.google.com/apikey. Stimme, Bilder malen und Internetsuche laufen dann über kostenlose Ersatzlösungen.'},
+  custom:{base:'',model:'',hint:'Jeder OpenAI-kompatible Dienst (z.B. Groq, OpenRouter, lokales Ollama).'}};
+const prov=()=>$('oprov').value;
+const isOAI=()=>prov()==='openai'&&!!apiKey();
+const apiKey=()=>$('okey').value.trim();
+const apiBase=()=>(prov()==='custom'?$('obase').value.trim():PROV[prov()].base).replace(/\/+$/,'');
+function provUI(){$('provHint').textContent=PROV[prov()].hint;$('baseRow').style.display=prov()==='custom'?'block':'none'}
+$('oprov').onchange=()=>{save('j_oprov',prov());const m=PROV[prov()].model;if(m){$('omodel').value=m;save('j_omodel',m)}provUI();conn()};
+$('obase').onchange=()=>save('j_obase',$('obase').value.trim());
+provUI();
 $('ovoice').value=load('j_ovoice','ballad'); $('voice').checked=load('j_voice',true);
 ['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>{save('j_'+i,$(i).value.trim());conn()});
 $('voice').onchange=()=>{save('j_voice',$('voice').checked);stopSpeech()};
@@ -189,7 +221,7 @@ $('snap').checked=load('j_snap',true);
 $('hq').checked=load('j_hq',!(window.SpeechRecognition||window.webkitSpeechRecognition));
 $('hq').onchange=()=>save('j_hq',$('hq').checked);
 $('snap').onchange=()=>{save('j_snap',$('snap').checked);if($('snap').checked)snapStart();else snapStop()};
-function conn(){const k=$('okey').value.trim();$('conn').textContent=!navigator.onLine?'offline':k?'verbunden':'kein Key'}
+function conn(){const k=$('okey').value.trim()&&(prov()!=='custom'||$('obase').value.trim());$('conn').textContent=!navigator.onLine?'offline':k?'verbunden':'kein Key'}
 addEventListener('online',conn);addEventListener('offline',conn);conn();
 
 /* ===== Anzeige ===== */
@@ -206,6 +238,8 @@ function renderList(id,items,onDel,onTog){
 function render(){
   renderList('tasks',tasks,i=>{tasks.splice(i,1);save('j_tasks',tasks);render()},i=>{tasks[i].done=!tasks[i].done;save('j_tasks',tasks);render()});
   renderList('mem',memory,i=>{memory.splice(i,1);save('j_mem',memory);render()});
+  renderList('apps',apps.map(a=>({text:'🧩 '+a.title+' · '+a.date})),i=>{if(confirm('App "'+apps[i].title+'" löschen?')){apps.splice(i,1);save('j_apps',apps);render()}},i=>window.open(appUrlOf(apps[i]),'_blank'));
+  renderList('notes',notes.map(n=>({text:n.title+' – '+n.text.slice(0,80)})),i=>{notes.splice(i,1);save('j_notes',notes);render()},i=>{const n=notes[i];alert(n.title+'\n\n'+n.text)});
 }
 
 /* ===== Stimme (OpenAI-Stimme, sonst iPhone-Stimme) ===== */
@@ -236,8 +270,8 @@ async function speak(text){
   if(!$('voice').checked)return;
   const id=++spkId;speakingNow=true;
   const clean=text.replace(/[*#_`]/g,'').slice(0,1500);
-  const key=$('okey').value.trim();
-  if(key){
+  const key=apiKey();
+  if(isOAI()){
     let started=false;
     try{
       /* Text in Satzgruppen teilen und alle parallel erzeugen: der erste Satz startet sofort */
@@ -265,7 +299,7 @@ let rec=null,listenTries=0;
 function syncUI(){$('convoBtn').classList.toggle('on',convo);$('mic').classList.toggle('on',!!rec)}
 function startListen(){
   if(rec)return;
-  if(!SR||($('hq').checked&&$('okey').value.trim()))return recordListen();
+  if(!SR||($('hq').checked&&isOAI()))return recordListen();
   stopSpeech();
   snapStop();let got=false;rec=new SR();rec.lang='de-DE';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
   rec.onstart=()=>{document.body.classList.add('listening');syncUI()};
@@ -298,7 +332,7 @@ function toWav(chunks,rate){
 async function recordListen(){
   if(rec)return;
   const key=$('okey').value.trim();
-  if(!key){say('Für die Spracheingabe in diesem Browser brauche ich deinen OpenAI API-Key (Einstellungen).','sys');convo=false;syncUI();return}
+  if(!isOAI()){say('Spracheingabe geht in diesem Browser nur mit OpenAI-Key. Nutze Chrome, Edge oder Safari – dort klappt es kostenlos.','sys');convo=false;syncUI();return}
   rec={stop(){},abort(){}};stopSpeech();snapStop();
   let st;
   try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
@@ -334,7 +368,7 @@ function afterSpeak(){
 $('mic').onclick=()=>{if(rec)rec.stop();else{convo=true;syncUI();startListen()}};
 $('convoBtn').onclick=()=>{convo=!convo;syncUI();if(convo)startListen();else if(rec)rec.abort()};
 $('hangup').onclick=()=>{convo=false;stopSpeech();if(rec)rec.abort();closeCam();syncUI();setTimeout(snapStart,800)};
-$('reset').onclick=()=>{history=[];$('log').replaceChildren();stopSpeech();say('Unterhaltung zurückgesetzt.','sys')};
+$('reset').onclick=()=>{history=[];save('j_hist',[]);$('log').replaceChildren();stopSpeech();say('Unterhaltung zurückgesetzt.','sys')};
 
 /* ===== Schnipp-Erkennung ===== */
 let snapCtx=null,snapStream=null,snapTimer=null,snapBase=0.01,snapLast=0,snapBusy=false;
@@ -443,6 +477,7 @@ async function route(input){
     const next=V.find(v=>new RegExp('\\b'+v+'\\b','i').test(text))||V[(V.indexOf($('ovoice').value)+1)%V.length];
     $('ovoice').value=next;save('j_ovoice',next);return reply('Stimme gewechselt zu '+next+'. So klinge ich jetzt, Boss.');
   }
+  if(/^(was kannst du|hilfe|fähigkeiten|was kannst du alles)\??$/i.test(text))return reply('Ich kann dir Apps und Spiele bauen, Dateien in deinem Laptop-Ordner suchen, lesen und speichern, mit dir reden, im Internet recherchieren, Nachrichten und Wetter holen, Bilder suchen und neue Bilder malen, Fotos mit der Kamera erkennen, rechnen und Code ausführen, Währungen umrechnen, übersetzen, Texte, Briefe und Tabellen als Datei erstellen, Notizen, Aufgaben und Einkaufslisten führen, Erinnerungen und Wecker stellen, YouTube, Musik, Karten und Routen öffnen, Anrufe, SMS, WhatsApp und E-Mails vorbereiten, Termine eintragen und mir Dinge über dich merken. Sag einfach, was du brauchst, Boss.');
   if(/wie spät|uhrzeit/i.test(text))return reply('Es ist '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.');
   if(/was siehst du|schau (mal )?(hier )?(hin|her|das an)|guck (mal )?(hier )?(hin|her)|was ist das (hier|da)|kannst du (das|mich) sehen|nimm (ein )?(foto|bild) auf/i.test(text))return lookAt(text);
   if(m=text.match(/(?:zeig|zeige|zeigst)(?: mir)?(?: ein| eine| mal)* (?:bilder|bild|fotos|foto)(?: von| vom| der| des| über)? (.+)/i))return showImage(m[1]);
@@ -477,8 +512,8 @@ async function showImage(term){
   r.forEach(x=>addCard(x.title,'',x.url));speak('Hier ist ein Bild zu '+term+'.');
 }
 async function showNews(){
-  const key=$('okey').value.trim();
-  if(!key)return reply('Für Nachrichten brauche ich den OpenAI API-Key.');
+  const key=apiKey();
+  if(!isOAI())return askAI('Was sind die wichtigsten Nachrichten heute? Nutze dazu das Werkzeug web_search.');
   say('Ich suche die aktuellen Nachrichten …','sys');const w=$('log').lastChild;
   const prompt='Suche im Internet die wichtigsten aktuellen Weltnachrichten von heute ('+new Date().toLocaleDateString('de-DE')+'). Antworte NUR mit einem JSON-Array aus genau 4 Objekten, ohne weiteren Text, im Format {"titel":"kurze deutsche Schlagzeile","text":"ein Satz auf Deutsch","bild":"kurzer Wikipedia-Suchbegriff für ein passendes Foto, z.B. Land, Stadt oder Person"}.';
   let data=null,err='';
@@ -509,24 +544,36 @@ function renderAutos(){const ul=$('autos');ul.replaceChildren();
   autos.forEach((a,i)=>{const li=document.createElement('li'),sp=document.createElement('span'),b=document.createElement('button');
     sp.textContent=a.text+(a.every?' (alle '+a.every+' Min.)':'');b.textContent='×';b.title='Stoppen';b.onclick=()=>stopAuto(i);li.append(sp,b);ul.append(li)});
   if(!autos.length){const li=document.createElement('li');li.textContent='Keine aktiv.';ul.append(li)}}
-function stopAuto(i){const a=autos[i];if(!a)return;clearTimeout(a.id);clearInterval(a.id);autos.splice(i,1);renderAutos()}
-function addAuto(min,text,every){
+const saveAutos=()=>save('j_autos',autos.map(a=>({text:a.text,every:a.every,at:a.at})));
+function stopAuto(i){const a=autos[i];if(!a)return;clearTimeout(a.id);clearInterval(a.id);autos.splice(i,1);renderAutos();saveAutos()}
+function addAuto(min,text,every,at){
   try{Notification.requestPermission()}catch{}
-  const fire=()=>{const m='Erinnerung: '+text;say(m,'ai');speak(m);try{if(Notification.permission==='granted')new Notification('JARVIS',{body:text})}catch{}};
-  const a={text,every};
+  const fire=()=>{const m='Erinnerung: '+text;say(m,'ai');speak(m);try{if(navigator.vibrate)navigator.vibrate([200,100,200]);if(Notification.permission==='granted')new Notification('JARVIS',{body:text})}catch{}};
+  const a={text,every,at:at||Date.now()+min*6e4};
   if(every)a.id=setInterval(fire,every*6e4);
-  else a.id=setTimeout(()=>{fire();const i=autos.indexOf(a);if(i>=0){autos.splice(i,1);renderAutos()}},min*6e4);
-  autos.push(a);renderAutos();
+  else a.id=setTimeout(()=>{fire();const i=autos.indexOf(a);if(i>=0){autos.splice(i,1);renderAutos();saveAutos()}},Math.max(0,a.at-Date.now()));
+  autos.push(a);renderAutos();saveAutos();
+}
+/* gespeicherte Erinnerungen nach dem Neuladen wiederherstellen */
+function restoreAutos(){
+  const missed=[];
+  for(const a of load('j_autos',[])){
+    if(a.every)addAuto(0,a.text,a.every);
+    else if(a.at>Date.now())addAuto(0,a.text,0,a.at);
+    else missed.push(a.text);
+  }
+  saveAutos();
+  return missed;
 }
 
 /* ===== Bestätigung vor wichtigen Aktionen ===== */
-function confirmCard(title,desc,go){
+function confirmCard(title,desc,go,cancel){
   const d=document.createElement('div');d.className='msg ai card';
   const b=document.createElement('b');b.textContent=title;const p=document.createElement('div');p.textContent=desc;
   const r=document.createElement('div');r.className='btns';
   const ok=document.createElement('button');ok.className='go';ok.textContent='Bestätigen';
   const no=document.createElement('button');no.className='go no';no.textContent='Abbrechen';
-  ok.onclick=()=>{d.remove();go()};no.onclick=()=>{d.remove();say('Abgebrochen.','sys')};
+  ok.onclick=()=>{d.remove();go()};no.onclick=()=>{d.remove();say('Abgebrochen.','sys');if(cancel)cancel()};
   r.append(ok,no);d.append(b,p,r);$('log').append(d);$('log').scrollTop=1e9;
 }
 const openUrl=u=>/^https?:/.test(u)?window.open(u,'_blank'):(location.href=u);
@@ -547,8 +594,18 @@ function icsUrl(e){
   return URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
 }
 const place=()=>new Promise((ok,no)=>navigator.geolocation.getCurrentPosition(p=>ok(p.coords),no,{timeout:10000}));
+async function freeSearch(q){
+  /* kostenlose Suche ohne Key: Wikipedia-Volltextsuche (de + en) */
+  const out=[];
+  for(const lang of ['de','en']){try{
+    const d=await(await fetch('https://'+lang+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srlimit=4&srsearch='+encodeURIComponent(q))).json();
+    for(const r of d.query?.search||[])out.push(r.title+': '+r.snippet.replace(/<[^>]+>/g,''));
+  }catch{}}
+  return out.length?'Kostenlose Suche (Wikipedia, evtl. nicht tagesaktuell):\n'+out.join('\n'):'Keine Ergebnisse. Echte Internetsuche gibt es nur mit OpenAI-Key; sag das dem Nutzer und öffne ggf. eine Google-Suche mit open_app.';
+}
 async function webSearch(q){
-  const key=$('okey').value.trim();let err='';
+  if(!isOAI())return freeSearch(q);
+  const key=apiKey();let err='';
   for(const tool of ['web_search','web_search_preview']){
     const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
       body:JSON.stringify({model:$('omodel').value.trim(),tools:[{type:tool}],input:q})});
@@ -561,7 +618,7 @@ async function webSearch(q){
 
 /* ===== Werkzeuge, die die KI selbst auswählt ===== */
 const S={type:'string'},N={type:'number'};
-const T=(name,description,properties={},required=[])=>({type:'function',function:{name,description,parameters:{type:'object',properties,required}}});
+const T=(name,description,properties={},required=[])=>{const f={name,description};if(Object.keys(properties).length){f.parameters={type:'object',properties};if(required.length)f.parameters.required=required}return {type:'function',function:f}};
 const TOOLS=[
   T('remember','Merkt dauerhaft eine Info über den Nutzer, auch Kontakte mit Telefonnummer ("Mama: +49...").',{text:S},['text']),
   T('add_task','Fügt eine Aufgabe oder einen Einkaufslisten-Eintrag hinzu.',{text:S,list:{type:'string',enum:['aufgabe','einkauf']}},['text']),
@@ -574,7 +631,26 @@ const TOOLS=[
   T('weather','Wetter für einen Ort; ohne Ort für den aktuellen Standort.',{city:S}),
   T('get_location','Ermittelt den aktuellen Standort des Nutzers (mit Erlaubnis).'),
   T('system_status','Online-Status, Verbindung, Speicher und Akku dieses Geräts.'),
-  T('stop_automations','Stoppt alle laufenden Erinnerungen und Automationen.')
+  T('stop_automations','Stoppt alle laufenden Erinnerungen und Automationen.'),
+  T('generate_image','Erzeugt (malt) ein neues Bild per KI aus einer Beschreibung. Prompt am besten auf Englisch und detailliert.',{prompt:S},['prompt']),
+  T('run_code','Führt JavaScript in einer isolierten Sandbox aus und gibt das Ergebnis (return-Wert und console.log) zurück. Für Rechnungen, Statistik, Datums-Berechnungen, Umrechnungen, Zufallszahlen, Textverarbeitung. Code muss mit return enden.',{code:S},['code']),
+  T('currency','Rechnet Währungen mit aktuellen Wechselkursen um.',{amount:N,from:S,to:S},['amount','from','to']),
+  T('wikipedia','Holt eine kurze, verlässliche Zusammenfassung aus Wikipedia zu einem Begriff, einer Person oder einem Ort.',{query:S},['query']),
+  T('world_time','Aktuelle Uhrzeit in einer Zeitzone (IANA, z.B. America/New_York, Asia/Tokyo).',{timezone:S},['timezone']),
+  T('read_webpage','Liest und fasst eine bestimmte Webseite (URL) zusammen.',{url:S,question:S},['url']),
+  T('save_note','Speichert eine Notiz dauerhaft (Ideen, Rezepte, Listen, Texte).',{title:S,text:S},['title','text']),
+  T('find_notes','Durchsucht die gespeicherten Notizen; leerer Suchbegriff liefert alle.',{query:S}),
+  T('delete_note','Löscht eine Notiz anhand ihres Titels.',{title:S},['title']),
+  T('make_file','Erstellt eine Datei zum Herunterladen (z.B. .txt, .csv, .md, .html, .json, .ics) mit beliebigem Inhalt: Briefe, Tabellen, Lebenslauf, Code, Pläne.',{filename:S,content:S},['filename','content']),
+  T('copy_or_share','Zeigt einen Text mit Kopieren- und Teilen-Knopf an (z.B. für fertige Nachrichten oder Posts).',{text:S},['text']),
+  T('set_alarm','Wecker/Erinnerung zu einer bestimmten Uhrzeit. time als lokale ISO-Zeit, z.B. 2026-11-02T07:00:00.',{time:S,text:S},['time','text']),
+  T('create_app','Baut eine komplette, funktionierende App/Webseite/Spiel als EINE HTML-Datei (HTML+CSS+JavaScript inline, keine externen Dateien nötig, modern, mobilfreundlich, Daten per localStorage). Gleicher Titel überschreibt und verbessert eine bestehende App. Die App wird sofort als Vorschau angezeigt.',{title:S,html:S},['title','html']),
+  T('get_app','Liefert den HTML-Code einer gespeicherten App, um sie zu verbessern oder zu ändern.',{title:S},['title']),
+  T('laptop_list','Listet Dateien und Ordner im verbundenen Laptop-Ordner. path relativ, leer = Hauptordner.',{path:S}),
+  T('laptop_search','Durchsucht den verbundenen Laptop-Ordner (inkl. Unterordner) nach Dateinamen und, wenn in_content=true, auch nach Text in Dateien.',{query:S,in_content:{type:'boolean'}},['query']),
+  T('laptop_read','Liest eine Textdatei (Code, Notizen, CSV, HTML ...) aus dem verbundenen Laptop-Ordner.',{path:S},['path']),
+  T('laptop_write','Speichert eine Textdatei im verbundenen Laptop-Ordner (Unterordner werden angelegt). Bestehende Dateien werden nur nach Bestätigung überschrieben.',{path:S,content:S},['path','content']),
+  T('settings','Ändert JARVIS-Einstellungen: voice (Stimme: ash, ballad, onyx, echo, fable, coral, alloy, nova, sage, shimmer, verse), speech (Sprachausgabe an/aus), model (OpenAI-Modell).',{voice:S,speech:{type:'boolean'},model:S})
 ];
 const FN={
   remember:a=>{memory.push({text:a.text});save('j_mem',memory);render();return 'gemerkt'},
@@ -596,28 +672,170 @@ const FN={
   system_status:async()=>{const o={online:navigator.onLine,verbindung:navigator.connection?.effectiveType,arbeitsspeicher_gb:navigator.deviceMemory};
     try{o.speicher_mb_genutzt=Math.round((await navigator.storage.estimate()).usage/1e6)}catch{}
     try{o.akku_prozent=Math.round((await navigator.getBattery()).level*100)}catch{o.akku='auf iOS nicht auslesbar'}return JSON.stringify(o)},
-  stop_automations:()=>{while(autos.length)stopAuto(0);return 'alle gestoppt'}
+  stop_automations:()=>{while(autos.length)stopAuto(0);return 'alle gestoppt'},
+  generate_image:async a=>{
+    if(!isOAI()){const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(a.prompt)+'?width=1024&height=1024&nologo=true&seed='+Math.floor(Math.random()*1e6);
+      addCard('Erzeugtes Bild',a.prompt,url);return 'Bild (kostenloser Dienst) wird angezeigt.'}
+    const key=apiKey();let err='';
+    for(const model of ['gpt-image-1','dall-e-3']){
+      try{
+        const body={model,prompt:a.prompt,size:'1024x1024',n:1};if(model==='dall-e-3')body.response_format='b64_json';
+        const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify(body)});
+        const d=await r.json();
+        if(r.ok&&d.data?.[0]){const x=d.data[0],url=x.b64_json?'data:image/png;base64,'+x.b64_json:x.url;
+          addCard('Erzeugtes Bild',a.prompt,url);const l=document.createElement('a');l.href=url;l.download='jarvis-bild.png';l.textContent='Bild speichern';l.className='go';l.style.textAlign='center';l.style.textDecoration='none';$('log').lastChild.append(l);
+          return 'Bild erzeugt und angezeigt.'}
+        err=d.error?.message||r.status;
+      }catch(e){err=e.message||e}
+    }
+    return 'Bilderzeugung fehlgeschlagen: '+err},
+  run_code:a=>runCode(a.code),
+  currency:async a=>{const f=a.from.toUpperCase(),t=a.to.toUpperCase();
+    try{const d=await(await fetch('https://api.frankfurter.dev/v1/latest?base='+f+'&symbols='+t)).json();const k=d.rates?.[t];if(k)return `${a.amount} ${f} = ${(a.amount*k).toFixed(2)} ${t} (Kurs ${k}, Stand ${d.date})`}catch{}
+    const d=await(await fetch('https://open.er-api.com/v6/latest/'+f)).json();const k=d.rates?.[t];
+    return k?`${a.amount} ${f} = ${(a.amount*k).toFixed(2)} ${t} (Kurs ${k})`:'Währung nicht gefunden'},
+  wikipedia:async a=>{
+    for(const lang of ['de','en']){
+      const d=await(await fetch('https://'+lang+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=1&prop=extracts|pageimages&exintro=1&explaintext=1&exchars=1200&piprop=thumbnail&pithumbsize=600&gsrsearch='+encodeURIComponent(a.query))).json();
+      const p=Object.values(d.query?.pages||{})[0];
+      if(p?.extract){if(p.thumbnail)addCard(p.title,'',p.thumbnail.source);return p.title+': '+p.extract}
+    }
+    return 'Nichts gefunden.'},
+  world_time:a=>{try{return new Date().toLocaleString('de-DE',{timeZone:a.timezone,weekday:'long',hour:'2-digit',minute:'2-digit',day:'numeric',month:'long'})}catch{return 'Unbekannte Zeitzone'}},
+  read_webpage:a=>webSearch('Öffne die Webseite '+a.url+' und '+(a.question?'beantworte auf Deutsch: '+a.question:'fasse ihren Inhalt auf Deutsch zusammen.')),
+  save_note:a=>{const i=notes.findIndex(n=>n.title.toLowerCase()===a.title.toLowerCase());const n={title:a.title,text:a.text,date:new Date().toLocaleDateString('de-DE')};
+    if(i>=0)notes[i]=n;else notes.push(n);save('j_notes',notes);render();return 'Notiz gespeichert'},
+  find_notes:a=>{const q=(a.query||'').toLowerCase();const r=notes.filter(n=>(n.title+' '+n.text).toLowerCase().includes(q));return r.length?JSON.stringify(r):'Keine passenden Notizen.'},
+  delete_note:a=>{const i=notes.findIndex(n=>n.title.toLowerCase().includes(a.title.toLowerCase()));if(i<0)return 'nicht gefunden';const t=notes[i].title;notes.splice(i,1);save('j_notes',notes);render();return 'gelöscht: '+t},
+  make_file:a=>{const ext=(a.filename.split('.').pop()||'txt').toLowerCase();
+    const type={csv:'text/csv',html:'text/html',json:'application/json',ics:'text/calendar',md:'text/markdown'}[ext]||'text/plain';
+    const url=URL.createObjectURL(new Blob([(ext==='csv'?'\ufeff':'')+a.content],{type:type+';charset=utf-8'}));
+    const d=document.createElement('div');d.className='msg ai card';const b=document.createElement('b');b.textContent='📄 '+a.filename;
+    const p=document.createElement('div');p.textContent=a.content.slice(0,300)+(a.content.length>300?' …':'');p.style.fontSize='14px';p.style.color='var(--dim)';
+    const l=document.createElement('a');l.href=url;l.download=a.filename;l.textContent='Herunterladen';l.className='go';l.style.textAlign='center';l.style.textDecoration='none';
+    d.append(b,p,l);$('log').append(d);$('log').scrollTop=1e9;return 'Datei erstellt, Download-Knopf wird angezeigt.'},
+  copy_or_share:a=>{const d=document.createElement('div');d.className='msg ai card';const p=document.createElement('div');p.textContent=a.text;
+    const r=document.createElement('div');r.className='btns';
+    const c=document.createElement('button');c.className='go';c.textContent='Kopieren';c.onclick=async()=>{try{await navigator.clipboard.writeText(a.text);c.textContent='Kopiert ✓'}catch{c.textContent='Nicht erlaubt'}};
+    r.append(c);if(navigator.share){const s=document.createElement('button');s.className='go no';s.textContent='Teilen';s.onclick=()=>navigator.share({text:a.text}).catch(()=>{});r.append(s)}
+    d.append(p,r);$('log').append(d);$('log').scrollTop=1e9;return 'Text mit Kopieren/Teilen-Knopf angezeigt.'},
+  set_alarm:a=>{const at=new Date(a.time).getTime();if(!at||at<Date.now())return 'Zeitpunkt liegt in der Vergangenheit oder ist ungültig.';
+    addAuto((at-Date.now())/6e4,a.text,0);return 'Wecker gestellt für '+new Date(at).toLocaleString('de-DE')+' (der Tab muss offen bleiben).'},
+  create_app:a=>{const i=apps.findIndex(x=>x.title.toLowerCase()===a.title.toLowerCase());const app={title:a.title,html:a.html,date:new Date().toLocaleString('de-DE')};
+    if(i>=0)apps[i]=app;else apps.push(app);
+    try{save('j_apps',apps);localStorage.getItem('j_apps')}catch{}
+    render();appCard(app);return 'App "'+a.title+'" gebaut und als Vorschau angezeigt'+(i>=0?' (aktualisiert)':'')+'.'},
+  get_app:a=>{const x=apps.find(x=>x.title.toLowerCase().includes(a.title.toLowerCase()));return x?x.html:'Keine App mit diesem Namen. Vorhanden: '+(apps.map(x=>x.title).join(', ')||'keine')},
+  laptop_list:async a=>{const d=await dirAt(a.path||'');const out=[];for await(const [n,h] of d.entries())out.push((h.kind==='directory'?'📁 ':'📄 ')+n);return out.sort().slice(0,300).join('\n')||'(leer)'},
+  laptop_search:a=>laptopSearch(a.query,a.in_content),
+  laptop_read:async a=>{const f=await(await fileAt(a.path)).getFile();if(f.size>2e6)return 'Datei zu groß ('+Math.round(f.size/1e6)+' MB).';
+    if(/^(image|video|audio)\//.test(f.type)||/\.(pdf|zip|exe|dmg|docx?|xlsx?|pptx?)$/i.test(f.name))return 'Das ist keine Textdatei ('+(f.type||f.name)+'), ich kann sie nicht lesen.';
+    const t=await f.text();return t.length>30000?t.slice(0,30000)+'\n… (gekürzt)':t},
+  laptop_write:async a=>{const root=await needDir();const parts=a.path.split('/').filter(Boolean),name=parts.pop();
+    let d=root;for(const x of parts)d=await d.getDirectoryHandle(x,{create:true});
+    let exists=true;try{await d.getFileHandle(name)}catch{exists=false}
+    const write=async()=>{const w=await(await d.getFileHandle(name,{create:true})).createWritable();await w.write(a.content);await w.close()};
+    if(!exists){await write();return 'Gespeichert: '+a.path}
+    confirmCard('Datei überschreiben?',a.path,()=>write().then(()=>say('Gespeichert: '+a.path,'sys'),e=>say('Fehler: '+e.message,'sys')));return 'Datei existiert schon – Bestätigungskarte wird angezeigt.'},
+  settings:a=>{const out=[];
+    if(a.voice&&[...$('ovoice').options].some(o=>o.value===a.voice)){$('ovoice').value=a.voice;save('j_ovoice',a.voice);out.push('Stimme '+a.voice)}
+    if(typeof a.speech==='boolean'){$('voice').checked=a.speech;save('j_voice',a.speech);out.push('Sprachausgabe '+(a.speech?'an':'aus'))}
+    if(a.model){$('omodel').value=a.model;save('j_omodel',a.model);out.push('Modell '+a.model)}
+    return out.length?'Geändert: '+out.join(', '):'Nichts geändert'}
 };
+
+/* ===== Apps: Vorschau, Vollbild, Download ===== */
+let apps=load('j_apps',[]);
+/* die Vorschau läuft abgeschottet: dort ersetzt ein Zwischenspeicher localStorage */
+const SHIM='<script>try{localStorage.length}catch(e){const m={},S={getItem:k=>k in m?m[k]:null,setItem:(k,v)=>{m[k]=String(v)},removeItem:k=>{delete m[k]},clear:()=>{for(const k in m)delete m[k]},key:i=>Object.keys(m)[i]??null,get length(){return Object.keys(m).length}};Object.defineProperty(window,"localStorage",{value:S});Object.defineProperty(window,"sessionStorage",{value:S})}<\/script>';
+const appUrlOf=x=>URL.createObjectURL(new Blob([x.html],{type:'text/html;charset=utf-8'}));
+function appCard(x){
+  const d=document.createElement('div');d.className='msg ai card';const b=document.createElement('b');b.textContent='🧩 '+x.title;
+  const f=document.createElement('iframe');f.sandbox='allow-scripts allow-forms allow-modals allow-popups';f.srcdoc=SHIM+x.html;f.title=x.title;
+  f.style.cssText='width:100%;height:420px;border:0;border-radius:12px;background:#fff';
+  const r=document.createElement('div');r.className='btns';r.style.flexWrap='wrap';
+  const btn=(t,cls,fn)=>{const k=document.createElement('button');k.className=cls;k.textContent=t;k.onclick=fn;r.append(k)};
+  btn('Vollbild','go',()=>window.open(appUrlOf(x),'_blank'));
+  btn('Herunterladen','go no',()=>{const l=document.createElement('a');l.href=appUrlOf(x);l.download=x.title.replace(/[^\w\-äöüÄÖÜ ]/g,'').trim().replace(/ +/g,'-')+'.html';document.body.append(l);l.click();l.remove()});
+  if(dirHandle)btn('Auf Laptop speichern','go no',()=>FN.laptop_write({path:'JARVIS-Apps/'+x.title.replace(/[\\/:*?"<>|]/g,'')+'.html',content:x.html}).then(m=>say(m,'sys'),e=>say('Fehler: '+e.message,'sys')));
+  d.append(b,f,r);$('log').append(d);$('log').scrollTop=1e9;
+}
+
+/* ===== Laptop-Ordner (File System Access API, nur Chrome/Edge am Computer) ===== */
+let dirHandle=null;
+const idb=(mode,fn)=>new Promise((ok,no)=>{const o=indexedDB.open('jarvis',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');
+  o.onsuccess=()=>{const t=o.result.transaction('kv',mode),st=t.objectStore('kv'),r=fn(st);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>no(t.error)};o.onerror=()=>no(o.error)});
+function dirUI(){$('dirName').textContent=dirHandle?'Verbunden: 📁 '+dirHandle.name:'Kein Ordner verbunden.'}
+async function pickDir(){
+  if(!window.showDirectoryPicker){say('Ordner-Zugriff geht nur in Chrome oder Edge auf dem Computer (nicht auf dem Handy, nicht in Safari/Firefox).','sys');return}
+  try{dirHandle=await showDirectoryPicker({mode:'readwrite'});await idb('readwrite',st=>st.put(dirHandle,'dir'));dirUI();say('Ordner verbunden: '+dirHandle.name,'sys')}catch{}
+}
+async function needDir(){
+  if(!dirHandle)throw new Error('Kein Laptop-Ordner verbunden. Der Nutzer muss unter Einstellungen → Laptop-Ordner auf "Ordner verbinden" tippen (nur Chrome/Edge am Computer).');
+  if(dirHandle.queryPermission&&await dirHandle.queryPermission({mode:'readwrite'})!=='granted'){
+    /* nach Neuladen braucht der Browser einen Tipp zur erneuten Erlaubnis */
+    const ok=await new Promise(res=>confirmCard('Zugriff auf "'+dirHandle.name+'" erlauben?','JARVIS möchte deinen verbundenen Ordner verwenden.',async()=>{res(await dirHandle.requestPermission({mode:'readwrite'})==='granted')},()=>res(false)));
+    if(!ok)throw new Error('Zugriff verweigert.');
+  }
+  return dirHandle;
+}
+async function dirAt(path){let d=await needDir();for(const x of path.split('/').filter(Boolean))d=await d.getDirectoryHandle(x);return d}
+async function fileAt(path){const parts=path.split('/').filter(Boolean),n=parts.pop();return (await dirAt(parts.join('/'))).getFileHandle(n)}
+const SKIP=/^(node_modules|\.git|\.cache|\.Trash|Library|AppData|\$Recycle\.Bin|venv|\.venv|__pycache__|dist|build)$/;
+const TEXT=/\.(txt|md|csv|json|js|ts|jsx|tsx|html?|css|py|java|c|cpp|h|cs|php|rb|go|rs|swift|kt|sh|bat|ps1|xml|ya?ml|ini|cfg|toml|log|sql|tex|srt|vtt)$/i;
+async function laptopSearch(q,inContent){
+  const root=await needDir(),needle=q.toLowerCase(),hits=[],t0=Date.now();let seen=0;
+  async function walk(d,pre,depth){
+    for await(const [n,h] of d.entries()){
+      if(hits.length>=60||seen>20000||Date.now()-t0>20000)return;
+      const p=pre+n;seen++;
+      if(h.kind==='directory'){if(!SKIP.test(n)&&depth<12)await walk(h,p+'/',depth+1);continue}
+      if(n.toLowerCase().includes(needle)){hits.push('📄 '+p);continue}
+      if(inContent&&TEXT.test(n)){try{const f=await h.getFile();if(f.size<1e6){const t=await f.text(),i=t.toLowerCase().indexOf(needle);
+        if(i>=0)hits.push('🔎 '+p+': …'+t.slice(Math.max(0,i-60),i+80).replace(/\s+/g,' ')+'…')}}catch{}}
+    }
+  }
+  await walk(root,'',0);
+  return (hits.length?hits.join('\n'):'Nichts gefunden.')+'\n('+seen+' Einträge durchsucht'+(Date.now()-t0>20000?', Zeitlimit erreicht':'')+')';
+}
+$('dirBtn').onclick=pickDir;
+$('dirOff').onclick=async()=>{dirHandle=null;try{await idb('readwrite',st=>st.delete('dir'))}catch{}dirUI()};
+idb('readonly',st=>st.get('dir')).then(h=>{if(h){dirHandle=h;dirUI()}}).catch(()=>{});
+
+/* ===== Code-Sandbox (Web Worker ohne Zugriff auf die Seite) ===== */
+function runCode(code){
+  return new Promise(ok=>{
+    const src='const logs=[];console.log=(...a)=>logs.push(a.map(x=>typeof x==="object"?JSON.stringify(x):String(x)).join(" "));'+
+      'onmessage=async e=>{try{const r=await (async()=>{'+'\n'+'"use strict";'+'\n'+'return eval(e.data)})();postMessage({r:r===undefined?undefined:(typeof r==="object"?JSON.stringify(r):String(r)),logs})}catch(x){postMessage({err:String(x),logs})}}';
+    const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'})),w=new Worker(url);
+    const end=v=>{clearTimeout(t);w.terminate();URL.revokeObjectURL(url);ok(v)};
+    const t=setTimeout(()=>end('Abgebrochen: Zeitlimit von 5 Sekunden überschritten.'),5000);
+    w.onmessage=e=>{const d=e.data;end((d.logs.length?'Ausgabe:\n'+d.logs.join('\n').slice(0,4000)+'\n':'')+(d.err?'Fehler: '+d.err:'Ergebnis: '+d.r))};
+    w.onerror=e=>{e.preventDefault();end('Fehler: '+e.message)};
+    w.postMessage('(async()=>{'+code+'\n})()');
+  });
+}
 
 /* ===== KI-Chat (OpenAI, Bilder + Werkzeuge) ===== */
 async function askAI(text,imageUrl){
-  const key=$('okey').value.trim();
-  if(!key)return reply('Ich brauche deinen OpenAI API-Key. Trage ihn unter Einstellungen ein.');
-  history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);
+  const key=apiKey();
+  if(!key)return reply('Ich brauche einen API-Key. Unter Einstellungen kannst du OpenAI oder kostenlos Google Gemini wählen.');
+  if(!apiBase())return reply('Bitte trage unter Einstellungen die Adresse deines Anbieters ein.');
+  history.push({role:'user',content:imageUrl?'[Foto gesendet] '+text:text});history=history.slice(-20);while(history.length&&history[0].role!=='user')history.shift();save('j_hist',history);
   const open=tasks.filter(t=>!t.done).map(t=>t.text).join('; ')||'keine';
-  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Sprich ganz normal und locker wie ein kluger Freund: duze den Nutzer, nenne ihn ab und zu „Boss“, mit trockenem Humor, aber ohne steife Floskeln. Antworte auf Deutsch, knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge, statt nur darüber zu reden. YouTube, Karten und Webseiten öffnest du sofort ohne Rückfrage. Anrufe, Nachrichten und Termine zeigst du dem Nutzer immer zur Bestätigung an; sende nie etwas ohne Empfänger und Inhalt. Du kannst NICHT selbst in Webseiten klicken, Formulare ausfüllen oder Konten erstellen (z.B. Shopify) und hast keinen Zugriff auf Kontakte, Kalender, Postfach oder Laptop; sag das ehrlich, öffne dann die passende Seite und führe den Nutzer Schritt für Schritt. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
+  const sys='Du bist JARVIS, der persönliche KI-Assistent des Nutzers, inspiriert vom Assistenten aus Iron Man. Sprich ganz normal und locker wie ein kluger Freund: duze den Nutzer, nenne ihn ab und zu „Boss“, mit trockenem Humor, aber ohne steife Floskeln. Antworte auf Deutsch, knapp (meist 1-3 Sätze), weil deine Antworten vorgelesen werden. Nutze deine Werkzeuge aktiv und kombiniere sie, statt nur darüber zu reden: Rechnen und Daten auswerten mit run_code (rechne nie im Kopf), Bilder malen mit generate_image, Fakten mit wikipedia, Aktuelles mit web_search, Wechselkurse mit currency, Notizen, Dateien zum Herunterladen (Briefe, Tabellen, Pläne) mit make_file, fertige Texte mit copy_or_share, Wecker mit set_alarm. Du baust auf Wunsch komplette Apps, Spiele, Rechner, Webseiten und Tools mit create_app (immer vollständiger, lauffähiger Code, schön gestaltet; zum Ändern erst get_app holen, dann create_app mit gleichem Titel). Mit den laptop_* Werkzeugen durchsuchst, liest und speicherst du Dateien im Ordner, den der Nutzer verbunden hat (ist keiner verbunden, erkläre kurz, wie er das unter Einstellungen macht). Du kannst außerdem übersetzen, Texte schreiben, programmieren, erklären, planen, lernen helfen und Fotos analysieren. YouTube, Karten und Webseiten öffnest du sofort ohne Rückfrage. Anrufe, Nachrichten und Termine zeigst du dem Nutzer immer zur Bestätigung an; sende nie etwas ohne Empfänger und Inhalt. Du kannst NICHT selbst in fremden Webseiten klicken, Formulare ausfüllen oder Konten erstellen und hast keinen Zugriff auf Kontakte, Postfach oder andere Geräte; sag das ehrlich, öffne dann die passende Seite und führe den Nutzer Schritt für Schritt. Erzähle beim App-Bauen nicht den Code vor, sondern sage kurz, was die App kann. Längere Inhalte (Code, Listen, Briefe) dürfen ausführlicher sein. Wenn der Nutzer ein Foto schickt, beschreibe genau, was zu sehen ist. Heute ist '+new Date().toLocaleString('de-DE')+'. Das weißt du über den Nutzer: '+(memory.map(x=>x.text).join('; ')||'noch nichts')+'. Offene Aufgaben: '+open+'.';
   const msgs=[{role:'system',content:sys},...history];
   if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
   try{
-    for(let i=0;i<6;i++){
-      const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    for(let i=0;i<10;i++){
+      const r=await fetch(apiBase()+'/chat/completions',{method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
         body:JSON.stringify({model:$('omodel').value.trim(),messages:msgs,tools:TOOLS})});
       const d=await r.json();
-      if(!r.ok){wait.remove();return reply('Fehler von OpenAI: '+(d.error?.message||r.status))}
+      if(!r.ok){wait.remove();const e=Array.isArray(d)?d[0]?.error:d.error;return reply('Fehler vom KI-Anbieter: '+(e?.message||r.status))}
       const m=d.choices?.[0]?.message||{};
-      if(!m.tool_calls?.length){wait.remove();const out=(m.content||'').trim()||'Erledigt.';history.push({role:'assistant',content:out});return reply(out)}
+      if(!m.tool_calls?.length){wait.remove();const out=(m.content||'').trim()||'Erledigt.';history.push({role:'assistant',content:out});save('j_hist',history);return reply(out)}
       msgs.push(m);
       for(const c of m.tool_calls){let res;
         try{res=await FN[c.function.name](JSON.parse(c.function.arguments||'{}'))}catch(e){res='Fehler: '+(e.message||e)}
@@ -636,6 +854,16 @@ $('file').onchange=async e=>{
   else{const t=(await f.text()).slice(0,12000);say(q+' ('+f.name+')','me');run(()=>askAI(q+'\n\nDatei '+f.name+':\n'+t))}
 };
 
+/* ===== Backup ===== */
+$('bkOut').onclick=()=>{const o={};for(const k of Object.keys(localStorage))if(k.startsWith('j_')&&k!=='j_okey')o[k]=localStorage.getItem(k);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'}));a.download='jarvis-backup.json';document.body.append(a);a.click();a.remove()};
+$('bkIn').onclick=()=>$('bkFile').click();
+$('bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const o=JSON.parse(await f.text());for(const[k,v]of Object.entries(o))if(k.startsWith('j_')&&k!=='j_okey')localStorage.setItem(k,v);location.reload()}catch{alert('Ungültige Backup-Datei.')}};
+
+/* ===== Als App installierbar + offline-fähig ===== */
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+
 /* ===== Alles verbinden ===== */
 $('chatForm').onsubmit=e=>{e.preventDefault();const v=$('chatIn').value;$('chatIn').value='';handle(v)};
 $('taskForm').onsubmit=e=>{e.preventDefault();const v=$('taskIn').value.trim();if(!v)return;tasks.push({text:v,done:false});save('j_tasks',tasks);$('taskIn').value='';render()};
@@ -651,6 +879,8 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
 renderAutos();
+const missedAutos=restoreAutos();
+if(missedAutos.length)say('Verpasste Erinnerung: '+missedAutos.join('; '),'sys');
 {const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+', Boss. Alle Systeme laufen.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Was kann ich für dich tun?')}
 </script>
 </body>
