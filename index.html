@@ -853,10 +853,15 @@ const FN={
 let apps=load('j_apps',[]);
 /* die Vorschau läuft abgeschottet: dort ersetzt ein Zwischenspeicher localStorage */
 const SHIM='<script>try{localStorage.length}catch(e){const m={},S={getItem:k=>k in m?m[k]:null,setItem:(k,v)=>{m[k]=String(v)},removeItem:k=>{delete m[k]},clear:()=>{for(const k in m)delete m[k]},key:i=>Object.keys(m)[i]??null,get length(){return Object.keys(m).length}};Object.defineProperty(window,"localStorage",{value:S});Object.defineProperty(window,"sessionStorage",{value:S})}<\/script>';
-const appUrlOf=x=>URL.createObjectURL(new Blob([x.html],{type:'text/html;charset=utf-8'}));
+/* alte Bild-Links (Gratis-Dienst mit 45-s-Limit) durch Stockfotos ersetzen */
+const STOP=/^(a|an|the|of|and|with|in|on|at|for|to|by|from|photo|image|picture|realistic|high|quality|professional|beautiful|cozy|modern|warm|light|lighting|interior|view|close|up|closeup|shot|style|detailed)$/i;
+function fixImgs(h){let i=0;return h.replace(/https:\/\/image\.pollinations\.ai\/prompt\/([^?"'()\s]+)[^"'()\s]*/g,(_,d)=>{
+  let w=decodeURIComponent(d.replace(/\+/g,' ')).toLowerCase().replace(/[^a-z ]/g,' ').split(/\s+/).filter(x=>x.length>2&&!STOP.test(x)).slice(0,2);
+  return 'https://loremflickr.com/1200/800/'+(w.join(',')||'city')+'?lock='+(++i*7)})}
+const appUrlOf=x=>URL.createObjectURL(new Blob([fixImgs(x.html)],{type:'text/html;charset=utf-8'}));
 function appCard(x){
   const d=document.createElement('div');d.className='msg ai card';const b=document.createElement('b');b.textContent='🧩 '+x.title;
-  const f=document.createElement('iframe');f.sandbox='allow-scripts allow-forms allow-modals allow-popups';f.srcdoc=SHIM+x.html;f.title=x.title;
+  const f=document.createElement('iframe');f.sandbox='allow-scripts allow-forms allow-modals allow-popups';f.srcdoc=SHIM+fixImgs(x.html);f.title=x.title;
   f.style.cssText='width:100%;height:420px;border:0;border-radius:12px;background:#fff';
   const r=document.createElement('div');r.className='btns';r.style.flexWrap='wrap';
   const btn=(t,cls,fn)=>{const k=document.createElement('button');k.className=cls;k.textContent=t;k.onclick=fn;r.append(k)};
@@ -1048,7 +1053,7 @@ async function buildApp(a){
   const old=apps.find(x=>x.title.toLowerCase()===a.title.toLowerCase());
   const pre=document.createElement('div'),code=document.createElement('pre'),bar=document.createElement('div');code.id='stCode';bar.id='stProg';bar.style.width='2%';pre.append(code,bar);
   stage('Baut · '+a.title.toLowerCase().replace(/\s+/g,'-')+'.html',pre);
-  const sys='Du bist ein Spitzen-Webdesigner und -Entwickler. Liefere AUSSCHLIESSLICH eine vollständige, lauffähige HTML-Datei (<!DOCTYPE html> bis </html>), ohne Erklärung und ohne Markdown. Alles inline (CSS + JS). Modernes, hochwertiges, mobilfreundliches Design mit klarer Typografie (Google Fonts erlaubt), großzügigen Abständen, sanften Animationen. Texte auf Deutsch, konkret und überzeugend, keine Platzhalter wie Lorem ipsum. Für Fotos nutze https://image.pollinations.ai/prompt/<englische Bildbeschreibung URL-kodiert>?width=1200&height=800&nologo=true . Interaktive Apps speichern Daten in localStorage.';
+  const sys='Du bist ein Spitzen-Webdesigner und -Entwickler. Liefere AUSSCHLIESSLICH eine vollständige, lauffähige HTML-Datei (<!DOCTYPE html> bis </html>), ohne Erklärung und ohne Markdown. Alles inline (CSS + JS). Modernes, hochwertiges, mobilfreundliches Design mit klarer Typografie (Google Fonts erlaubt), großzügigen Abständen, sanften Animationen. Texte auf Deutsch, konkret und überzeugend, keine Platzhalter wie Lorem ipsum. Für Fotos nutze echte Stockfotos über https://loremflickr.com/<breite>/<höhe>/<1-3 englische Stichwörter mit Komma, z.B. coffee,cafe>?lock=<andere Zahl pro Bild> (z.B. https://loremflickr.com/1200/800/coffee,barista?lock=12). Jedes Bild bekommt eine andere lock-Zahl. Nutze KEINE anderen Bilddienste. Setze bei jedem <img> loading="lazy", object-fit:cover und einen dunklen Hintergrund als Ersatz. Interaktive Apps speichern Daten in localStorage.';
   const user=(old?'Hier ist die bestehende Version:\n'+old.html.slice(0,60000)+'\n\nÄndere/verbessere sie so: ':'Baue: ')+a.brief;
   let html='',err='';
   try{
@@ -1068,7 +1073,7 @@ async function buildApp(a){
 }
 function showPreview(app){
   const pv=document.createElement('div');pv.className='pv';
-  for(const cls of ['desk','phone']){const f=document.createElement('iframe');f.className=cls;f.sandbox='allow-scripts allow-forms allow-modals allow-popups';f.srcdoc=SHIM+app.html;f.title=app.title+' '+cls;pv.append(f)}
+  for(const cls of ['desk','phone']){const f=document.createElement('iframe');f.className=cls;f.sandbox='allow-scripts allow-forms allow-modals allow-popups';f.srcdoc=SHIM+fixImgs(app.html);f.title=app.title+' '+cls;pv.append(f)}
   stage('Fertig · '+app.title,pv);
 }
 
