@@ -280,6 +280,9 @@ function provUI(){$('provHint').textContent=PROV[prov()].hint;$('baseRow').style
 $('oprov').onchange=()=>{save('j_oprov',prov());const m=PROV[prov()].model;if(m){$('omodel').value=m;save('j_omodel',m)}provUI();conn()};
 $('obase').onchange=()=>save('j_obase',$('obase').value.trim());
 provUI();
+/* Google-Key erkannt, aber OpenAI eingestellt? Dann automatisch auf Gemini umschalten */
+function autoProv(){const k=apiKey();if(prov()==='openai'&&k&&!k.startsWith('sk-')&&/^(AIza|AQ\.)/.test(k)){$('oprov').value='gemini';$('oprov').onchange();say('Das ist ein Google-Gemini-Key, ich habe auf Gemini umgestellt.','sys')}}
+$('okey').addEventListener('change',autoProv);
 $('ovoice').value=load('j_ovoice','ballad'); $('voice').checked=load('j_voice',true);
 ['okey','omodel','ovoice'].forEach(i=>$(i).onchange=()=>{save('j_'+i,$(i).value.trim());conn()});
 $('voice').onchange=()=>{save('j_voice',$('voice').checked);stopSpeech()};
@@ -1100,6 +1103,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 new MutationObserver(()=>{const c=document.body.classList;$('status').textContent=c.contains('looking')?'ich schaue':c.contains('listening')?'ich höre':c.contains('speaking')?'ich spreche':'bereit'}).observe(document.body,{attributes:true,attributeFilter:['class']});
 render();
 renderAutos();
+autoProv();
 const missedAutos=restoreAutos();
 if(missedAutos.length)say('Verpasste Erinnerung: '+missedAutos.join('; '),'sys');
 {const h=new Date().getHours(),o=tasks.filter(t=>!t.done).length;reply((h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+', Boss. Alle Systeme laufen.'+(o?' Du hast '+o+' offene Aufgabe'+(o>1?'n':'')+'.':'')+' Was kann ich für dich tun?')}
