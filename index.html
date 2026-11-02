@@ -270,7 +270,7 @@ $('okey').value=load('j_okey',''); $('omodel').value=load('j_omodel','gpt-4o-min
 $('oprov').value=load('j_oprov','openai'); $('obase').value=load('j_obase','');
 /* Anbieter: OpenAI hat alle Funktionen; andere nur Chat + Werkzeuge (Stimme dann vom Gerät) */
 const PROV={openai:{base:'https://api.openai.com/v1',model:'gpt-4o-mini',hint:'Keine Monatsgebühr: Du lädst Guthaben auf (ab 5 $) und zahlst nur, was du nutzt. Key: platform.openai.com/api-keys'},
-  gemini:{base:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-2.5-flash',hint:'Kostenlos mit Tageslimit, ohne Kreditkarte. Key: aistudio.google.com/apikey. Stimme, Bilder malen und Internetsuche laufen dann über kostenlose Ersatzlösungen.'},
+  gemini:{base:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-flash-latest',hint:'Kostenlos mit Tageslimit, ohne Kreditkarte. Key: aistudio.google.com/apikey. Stimme, Bilder malen und Internetsuche laufen dann über kostenlose Ersatzlösungen.'},
   custom:{base:'',model:'',hint:'Jeder OpenAI-kompatible Dienst (z.B. Groq, OpenRouter, lokales Ollama).'}};
 const prov=()=>$('oprov').value;
 const isOAI=()=>prov()==='openai'&&!!apiKey();
@@ -280,6 +280,15 @@ function provUI(){$('provHint').textContent=PROV[prov()].hint;$('baseRow').style
 $('oprov').onchange=()=>{save('j_oprov',prov());const m=PROV[prov()].model;if(m){$('omodel').value=m;save('j_omodel',m)}provUI();conn()};
 $('obase').onchange=()=>save('j_obase',$('obase').value.trim());
 provUI();
+/* Modell abgeschaltet? Den in der Fehlermeldung empfohlenen Nachfolger übernehmen */
+function modelFix(msg){
+  msg=String(msg||'');const cur=$('omodel').value.trim();
+  if(!/no longer available|not found|is not supported|deprecated|does not exist|update your code/i.test(msg))return false;
+  let next=[...msg.matchAll(/models\/([\w.\-]+)/g)].map(m=>m[1]).filter(m=>m!==cur).pop();
+  if(!next&&prov()==='gemini'&&cur!=='gemini-flash-latest')next='gemini-flash-latest';
+  if(!next)return false;
+  $('omodel').value=next;save('j_omodel',next);say('Modell '+cur+' gibt es nicht mehr – ich nutze jetzt '+next+'.','sys');return true;
+}
 /* Google-Key erkannt, aber OpenAI eingestellt? Dann automatisch auf Gemini umschalten */
 function autoProv(){const k=apiKey();if(prov()==='openai'&&k&&!k.startsWith('sk-')&&/^(AIza|AQ\.)/.test(k)){$('oprov').value='gemini';$('oprov').onchange();say('Das ist ein Google-Gemini-Key, ich habe auf Gemini umgestellt.','sys')}}
 $('okey').addEventListener('change',autoProv);
@@ -901,12 +910,13 @@ async function askAI(text,imageUrl){
   if(imageUrl)msgs[msgs.length-1]={role:'user',content:[{type:'text',text},{type:'image_url',image_url:{url:imageUrl}}]};
   say('…','sys');const wait=$('log').lastChild;
   try{
+    let fixed=false;
     for(let i=0;i<10;i++){
       const r=await fetch(apiBase()+'/chat/completions',{method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
         body:JSON.stringify({model:$('omodel').value.trim(),messages:msgs,tools:TOOLS})});
       const d=await r.json();
-      if(!r.ok){wait.remove();const e=Array.isArray(d)?d[0]?.error:d.error;return reply('Fehler vom KI-Anbieter: '+(e?.message||r.status))}
+      if(!r.ok){const e=Array.isArray(d)?d[0]?.error:d.error;if(!fixed&&modelFix(e?.message)){fixed=true;i--;continue}wait.remove();return reply('Fehler vom KI-Anbieter: '+(e?.message||r.status))}
       const m=d.choices?.[0]?.message||{};
       if(!m.tool_calls?.length){wait.remove();const out=(m.content||'').trim()||'Erledigt.';history.push({role:'assistant',content:out});save('j_hist',history);return reply(out)}
       msgs.push(m);
@@ -1023,9 +1033,14 @@ async function buildApp(a){
   const user=(old?'Hier ist die bestehende Version:\n'+old.html.slice(0,60000)+'\n\nÄndere/verbessere sie so: ':'Baue: ')+a.brief;
   let html='',err='';
   try{
-    const r=await fetch(apiBase()+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:$('omodel').value.trim(),stream:true,messages:[{role:'system',content:sys},{role:'user',content:user}]})});
-    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error((Array.isArray(d)?d[0]?.error:d.error)?.message||r.status)}
+    let r;
+    for(let t=0;t<2;t++){
+      r=await fetch(apiBase()+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:$('omodel').value.trim(),stream:true,messages:[{role:'system',content:sys},{role:'user',content:user}]})});
+      if(r.ok)break;
+      const d=await r.json().catch(()=>({})),m=(Array.isArray(d)?d[0]?.error:d.error)?.message||r.status;
+      if(t||!modelFix(m))throw new Error(m);
+    }
     const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
     for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
       const lines=buf.split('\n');buf=lines.pop();
